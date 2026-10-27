@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';class IncidentSearchBar extends StatelessWidget{const IncidentSearchBar({super.key,required this.onChanged});final ValueChanged<String> onChanged;@override Widget build(BuildContext context)=>TextField(onChanged:onChanged,decoration:const InputDecoration(hintText:'Search title, description or location',prefixIcon:Icon(Icons.search)));}
