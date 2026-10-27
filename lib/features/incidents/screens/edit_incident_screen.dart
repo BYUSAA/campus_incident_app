@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';class EditIncidentScreen extends StatelessWidget{const EditIncidentScreen({super.key});@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Edit incident')),body:const Center(child:Text('Editing can be added when reporter-edit permissions are finalized.')));}
