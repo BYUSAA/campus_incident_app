@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn(){return request.auth != null;}
+  function verifiedAlu(){return signedIn() && request.auth.token.email_verified == true && request.auth.token.email.matches('.*@alustudent[.]com$');}
+  function staff(){return verifiedAlu() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';}
+  match /users/{uid} {
+   allow read: if verifiedAlu() && (request.auth.uid == uid || staff());
+   allow create: if verifiedAlu() && request.auth.uid == uid && request.resource.data.role == 'student';
+   allow update: if verifiedAlu() && request.auth.uid == uid && request.resource.data.role == resource.data.role;
+   allow delete: if false;
+  }
+  match /incidents/{id} {
+   allow read: if verifiedAlu();
+   allow create: if verifiedAlu() && request.resource.data.reportedBy == request.auth.uid && request.resource.data.status == 'Submitted';
+   allow update: if staff() || (verifiedAlu() && resource.data.reportedBy == request.auth.uid && request.resource.data.reportedBy == resource.data.reportedBy && request.resource.data.status == resource.data.status);
+   allow delete: if staff() || (verifiedAlu() && resource.data.reportedBy == request.auth.uid);
+  }
+ }
+}
