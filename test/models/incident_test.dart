@@ -1,0 +1,1 @@
+import 'package:flutter_test/flutter_test.dart';import 'package:campus_incident_app/models/incident.dart';void main(){test('Incident defaults safely',(){final i=Incident.fromMap('abc',{});expect(i.id,'abc');expect(i.status,'Submitted');expect(i.photoUrls,isEmpty);});}
