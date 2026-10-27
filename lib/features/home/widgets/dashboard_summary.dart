@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';class DashboardSummary extends StatelessWidget{const DashboardSummary({super.key,required this.count});final int count;@override Widget build(BuildContext context)=>Card(child:ListTile(leading:const Icon(Icons.assignment_outlined,size:36),title:Text('$count reports'),subtitle:const Text('Campus issues visible to you')));}
