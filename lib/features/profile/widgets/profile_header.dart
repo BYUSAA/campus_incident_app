@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';class ProfileHeader extends StatelessWidget{const ProfileHeader({super.key,required this.name,required this.email});final String name,email;@override Widget build(BuildContext context)=>Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(name),subtitle:Text(email)));}
