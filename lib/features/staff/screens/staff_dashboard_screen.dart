@@ -1,1 +1,37 @@
-import 'package:flutter/material.dart';import 'package:provider/provider.dart';import '../../../core/routing/app_router.dart';import '../../../providers/auth_provider.dart';import '../../../providers/incident_provider.dart';import '../../../shared/widgets/empty_state.dart';import '../widgets/staff_incident_card.dart';class StaffDashboardScreen extends StatelessWidget{const StaffDashboardScreen({super.key});@override Widget build(BuildContext context){if(!context.watch<AuthProvider>().isStaff)return Scaffold(appBar:AppBar(title:const Text('Staff dashboard')),body:const EmptyState(title:'Access restricted',message:'Only authorized staff can manage reports.',icon:Icons.lock_outline));final p=context.watch<IncidentProvider>();return Scaffold(appBar:AppBar(title:const Text('Staff dashboard')),body:p.incidents.isEmpty?const EmptyState(title:'No reports',message:'New campus reports will appear here.'):ListView.builder(itemCount:p.incidents.length,itemBuilder:(context,i){final x=p.incidents[i];return StaffIncidentCard(incident:x,onManage:()=>Navigator.pushNamed(context,AppRouter.manageStaff,arguments:x.id));}));}}
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../providers/incident_provider.dart';
+import '../../incidents/widgets/incident_card.dart';
+import '../manage_incident_screen.dart';
+
+class StaffDashboardScreen extends StatelessWidget {
+  const StaffDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Note: In a real app, fetch ALL incidents here, not just user's
+    final provider = context.watch<IncidentProvider>();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Staff Dashboard'), automaticallyImplyLeading: false),
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              padding: const EdgeInsets.all(AppConstants.paddingM),
+              itemCount: provider.incidents.length,
+              itemBuilder: (context, index) {
+                final incident = provider.incidents[index];
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (_) => ManageIncidentScreen(incident: incident))
+                  ),
+                  child: IncidentCard(incident: incident, onTap: () {}),
+                );
+              },
+            ),
+    );
+  }
+}
