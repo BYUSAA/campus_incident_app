@@ -1,1 +1,56 @@
-import 'package:flutter/material.dart';import 'package:provider/provider.dart';import '../../../core/constants/incident_categories.dart';import '../../../models/incident.dart';import '../../../providers/auth_provider.dart';import '../../../providers/incident_provider.dart';import '../../../shared/widgets/loading_indicator.dart';import '../widgets/status_update_control.dart';class ManageIncidentScreen extends StatefulWidget{const ManageIncidentScreen({super.key,required this.incidentId});final String incidentId;@override State<ManageIncidentScreen> createState()=>_ManageIncidentScreenState();}class _ManageIncidentScreenState extends State<ManageIncidentScreen>{String? status;bool saving=false;@override Widget build(BuildContext context){if(!context.watch<AuthProvider>().isStaff)return const Scaffold(body:Center(child:Text('Access restricted')));return Scaffold(appBar:AppBar(title:const Text('Manage incident')),body:FutureBuilder<Incident?>(future:context.read<IncidentProvider>().getById(widget.incidentId),builder:(context,s){if(s.connectionState==ConnectionState.waiting)return const LoadingIndicator();if(s.hasError||s.data==null)return const Center(child:Text('Incident not found'));final i=s.data!;status??=i.status;return Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Text(i.title,style:Theme.of(context).textTheme.headlineSmall),const SizedBox(height:8),Text(i.description),const SizedBox(height:20),StatusUpdateControl(value:status!,onChanged:(v)=>setState(()=>status=v)),const SizedBox(height:18),FilledButton(onPressed:saving?null:()async{setState(()=>saving=true);try{await context.read<IncidentProvider>().updateStatus(i.id,status!);if(context.mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Status updated')));Navigator.pop(context);}}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Update failed: $e')));}finally{if(mounted)setState(()=>saving=false);}},child:Text(saving?'Saving...':'Save status'))]));}));}}
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/date_formatter.dart';
+import '../../../models/incident.dart';
+import '../../../providers/incident_provider.dart';
+import '../widgets/status_update_control.dart';
+
+class ManageIncidentScreen extends StatelessWidget {
+  final Incident incident;
+
+  const ManageIncidentScreen({super.key, required this.incident});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Manage Incident')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppConstants.paddingL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(incident.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Reported by: ${incident.reportedBy}', style: const TextStyle(color: AppConstants.greyText)),
+            Text(DateFormatter.formatDateTime(incident.createdAt), style: const TextStyle(color: AppConstants.greyText, fontSize: 12)),
+            const Divider(height: 32),
+            
+            const Text('Category', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(incident.category),
+            const SizedBox(height: 16),
+            
+            const Text('Location', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(incident.location),
+            const SizedBox(height: 16),
+            
+            const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(incident.description, style: const TextStyle(height: 1.5)),
+            const Divider(height: 32),
+            
+            const Text('Update Status', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            StatusUpdateControl(
+              currentStatus: incident.status,
+              onStatusChanged: (newStatus) async {
+                await context.read<IncidentProvider>().updateStatus(incident.id, newStatus);
+                if (context.mounted) context.pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
