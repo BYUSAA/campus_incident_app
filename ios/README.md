@@ -1,14 +1,21 @@
 # iOS platform notes
 
-The shared Flutter application code includes Firebase and image-picker integrations, but this repository does not currently contain generated iOS Runner/Xcode files.
+iOS is an optional Flutter target. Android remains the intended platform for the assignment demonstration.
 
-To add iOS support, use a Mac with Xcode installed and run this command from the project root:
+## Current state
+
+Shared Flutter code includes Firebase and image-picker integrations. Generated iOS Runner/Xcode project files are not committed. iOS development requires macOS, Xcode, and the appropriate CocoaPods setup.
+
+## Generate iOS files
+
+On a Mac, from the project root:
 
 ```bash
+flutter doctor
 flutter create --platforms=ios .
 ```
 
-Register the generated iOS bundle identifier in the Firebase project and run:
+Register the generated bundle identifier with Firebase Console. Enable the Firebase products required by the app and configure:
 
 ```bash
 flutterfire configure --platforms=ios
@@ -16,4 +23,11 @@ flutter pub get
 flutter run
 ```
 
-The assignment demonstration should use the supported Android target unless iOS is explicitly required. Never commit signing certificates, provisioning profiles, or private keys.
+## Platform verification
+
+- Test email/password registration, verification, and sign-in.
+- Test gallery selection and camera access on a physical iPhone.
+- Review photo-library and camera permission descriptions in the generated `Info.plist`.
+- Confirm Firebase options include the iOS configuration if iOS is used.
+
+Do not commit Apple signing certificates, provisioning profiles, distribution keys, or private signing material. iOS testing does not replace the required Android evidence.

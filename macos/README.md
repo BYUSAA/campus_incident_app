@@ -1,12 +1,19 @@
 # macOS desktop platform notes
 
-macOS desktop support is optional. This repository does not currently include generated macOS Runner/Xcode files.
+macOS desktop is optional. A Mac with Xcode is required to generate and build the native macOS runner.
 
-On a Mac with Xcode installed, run from the project root:
+## Generate macOS runner files
+
+From the repository root on a Mac:
 
 ```bash
+flutter doctor
 flutter create --platforms=macos .
+flutterfire configure --platforms=macos
+flutter pub get
 flutter run -d macos
 ```
 
-Configure Firebase for macOS separately if this platform is needed. Keep signing identities, certificates, and provisioning files out of Git.
+Register the macOS application using the correct bundle identifier in Firebase Console. Test Firebase Authentication, Firestore, and file selection in the actual macOS environment.
+
+Keep Apple signing identities, certificates, provisioning profiles, and private keys out of source control. macOS desktop testing does not replace the Android mobile demonstration.
