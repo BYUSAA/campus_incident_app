@@ -1,1 +1,47 @@
-import 'package:flutter/material.dart';import '../../../core/constants/incident_categories.dart';class IncidentFilterSheet extends StatelessWidget{const IncidentFilterSheet({super.key,required this.category,required this.status,required this.onCategoryChanged,required this.onStatusChanged});final String category,status;final ValueChanged<String> onCategoryChanged,onStatusChanged;@override Widget build(BuildContext context)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.stretch,children:[Text('Filter reports',style:Theme.of(context).textTheme.titleLarge),DropdownButtonFormField<String>(value:category,decoration:const InputDecoration(labelText:'Category'),items:['All',...IncidentCategories.all].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v){if(v!=null)onCategoryChanged(v);}),DropdownButtonFormField<String>(value:status,decoration:const InputDecoration(labelText:'Status'),items:['All',...IncidentCategories.statuses].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v){if(v!=null)onStatusChanged(v);}),FilledButton(onPressed:()=>Navigator.pop(context),child:const Text('Apply'))]));}
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
+
+class IncidentFilterSheet extends StatelessWidget {
+  final String currentFilter;
+  final Function(String) onFilterSelected;
+
+  const IncidentFilterSheet({
+    super.key,
+    required this.currentFilter,
+    required this.onFilterSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filters = ['All', 'Submitted', 'In Progress', 'Resolved'];
+
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.paddingL),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Filter by Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          ...filters.map((f) => RadioListTile<String>(
+                title: Text(f),
+                value: f,
+                groupValue: currentFilter,
+                activeColor: AppConstants.primaryColor,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (val) {
+                  if (val != null) {
+                    onFilterSelected(val);
+                    Navigator.pop(context);
+                  }
+                },
+              )),
+        ],
+      ),
+    );
+  }
+}
