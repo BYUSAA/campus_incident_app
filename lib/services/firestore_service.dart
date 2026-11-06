@@ -1,25 +1,50 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/incident.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  FirestoreService({FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
 
-  // Create Incident
-  Future<void> createIncident(Incident incident) async {
-    await _db.collection('incidents').add(incident.toMap());
+  final FirebaseFirestore _db;
+
+  CollectionReference<Map<String, dynamic>> get _users => _db.collection('users');
+  CollectionReference<Map<String, dynamic>> get _incidents => _db.collection('incidents');
+
+  Future<void> saveUser(String uid, Map<String, dynamic> data) {
+    return _users.doc(uid).set(data, SetOptions(merge: true));
   }
 
-  // Stream of user's incidents
-  Stream<List<Incident>> getUserIncidents(String uid) {
-    return _db.collection('incidents')
+  Future<Map<String, dynamic>?> getUser(String uid) async {
+    final snapshot = await _users.doc(uid).get();
+    return snapshot.data();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchIncidents() {
+    return _incidents.orderBy('createdAt', descending: true).snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchMyIncidents(String uid) {
+    return _incidents
         .where('reportedBy', isEqualTo: uid)
         .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => Incident.fromMap(doc.id, doc.data())).toList());
+        .snapshots();
   }
 
-  // Update Status (Staff)
-  Future<void> updateIncidentStatus(String incidentId, String newStatus) async {
-    await _db.collection('incidents').doc(incidentId).update({'status': newStatus});
+  Future<String> createIncident(Map<String, dynamic> data) async {
+    final reference = _incidents.doc();
+    await reference.set(data);
+    return reference.id;
+  }
+
+  Future<Map<String, dynamic>?> getIncident(String id) async {
+    final snapshot = await _incidents.doc(id).get();
+    return snapshot.data();
+  }
+
+  Future<void> updateIncident(String id, Map<String, dynamic> data) {
+    return _incidents.doc(id).update(data);
+  }
+
+  Future<void> deleteIncident(String id) {
+    return _incidents.doc(id).delete();
   }
 }

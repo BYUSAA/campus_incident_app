@@ -1,14 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/auth_provider.dart';
 
-class VerifyEmailScreen extends StatelessWidget {
+class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key});
 
   @override
+  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+}
+
+class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+  bool _checking = false;
+  bool _sending = false;
+
+  Future<void> _checkVerification() async {
+    setState(() => _checking = true);
+    try {
+      final verified = await context.read<AuthProvider>().refreshVerification();
+      if (!mounted) return;
+      if (verified) {
+        context.go('/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your email is not verified yet. Open the link in your inbox, then try again.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not check verification: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() => _sending = true);
+    try {
+      await context.read<AuthProvider>().resendVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('A new verification email has been sent.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not resend the email: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final email = context.watch<AuthProvider>().firebaseUser?.email ?? 'your ALU email';
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -16,18 +69,31 @@ class VerifyEmailScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.mark_email_read, size: 80, color: AppConstants.primaryColor),
+              const Icon(Icons.mark_email_read_outlined, size: 80, color: AppConstants.primaryColor),
               const SizedBox(height: 24),
-              const Text('Verify your Email', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text('Verify your email', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              const Text(
-                'We have sent a verification link to your ALU email. Please verify to continue.',
+              Text(
+                'We sent a verification link to $email. Open the email and follow the link before continuing.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppConstants.greyText),
+                style: const TextStyle(color: AppConstants.greyText),
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => context.read<AuthProvider>().logout(), // Logs out to trigger login redirect
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _checking ? null : _checkVerification,
+                  child: _checking
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('I have verified my email'),
+                ),
+              ),
+              TextButton(
+                onPressed: _sending ? null : _resend,
+                child: Text(_sending ? 'Sending…' : 'Resend verification email'),
+              ),
+              TextButton(
+                onPressed: () => context.read<AuthProvider>().logout(),
                 child: const Text('Back to Login'),
               ),
             ],

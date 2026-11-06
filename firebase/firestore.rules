@@ -1,20 +1,101 @@
 rules_version = '2';
+
 service cloud.firestore {
- match /databases/{database}/documents {
-  function signedIn(){return request.auth != null;}
-  function verifiedAlu(){return signedIn() && request.auth.token.email_verified == true && request.auth.token.email.matches('.*@alustudent[.]com$');}
-  function staff(){return verifiedAlu() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';}
-  match /users/{uid} {
-   allow read: if verifiedAlu() && (request.auth.uid == uid || staff());
-   allow create: if verifiedAlu() && request.auth.uid == uid && request.resource.data.role == 'student';
-   allow update: if verifiedAlu() && request.auth.uid == uid && request.resource.data.role == resource.data.role;
-   allow delete: if false;
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function aluAccount() {
+      return signedIn()
+        && request.auth.token.email is string
+        && request.auth.token.email.matches('^[^@]+@alustudent[.]com$');
+    }
+
+    function verifiedAlu() {
+      return aluAccount() && request.auth.token.email_verified == true;
+    }
+
+    function staff() {
+      return verifiedAlu()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+
+    match /users/{uid} {
+      // A newly created ALU account may create its own student profile before
+      // verifying email. All incident access still requires email verification.
+      allow create: if aluAccount()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'student'
+        && request.resource.data.emailVerified == false
+        && request.resource.data.keys().hasOnly([
+          'uid', 'name', 'email', 'role', 'emailVerified', 'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'name', 'email', 'role', 'emailVerified', 'createdAt'
+        ]);
+
+      allow read: if aluAccount()
+        && (request.auth.uid == uid || staff());
+
+      // Users cannot change their own role or verification status. Staff roles
+      // must be granted through a trusted Firebase Console/Admin SDK process.
+      allow update: if aluAccount()
+        && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'updatedAt']);
+
+      allow delete: if false;
+    }
+
+    match /incidents/{incidentId} {
+      // Students may only read their own reports; authorized staff may review
+      // all reports. Query filters must match these rules.
+      allow read: if staff()
+        || (verifiedAlu() && resource.data.reportedBy == request.auth.uid);
+
+      allow create: if verifiedAlu()
+        && request.resource.data.reportedBy == request.auth.uid
+        && request.resource.data.status == 'Submitted'
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.category is string
+        && request.resource.data.location is string
+        && request.resource.data.keys().hasOnly([
+          'title', 'description', 'category', 'location', 'reportedBy',
+          'reporterName', 'status', 'createdAt', 'updatedAt',
+          'imageUrl', 'photoUrls', 'assignedTo'
+        ])
+        && request.resource.data.keys().hasAll([
+          'title', 'description', 'category', 'location', 'reportedBy',
+          'status', 'createdAt', 'updatedAt'
+        ]);
+
+      allow update: if staff()
+        && request.resource.data.reportedBy == resource.data.reportedBy
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt', 'assignedTo'])
+        && request.resource.data.status in ['Submitted', 'In Progress', 'Resolved']
+        || (verifiedAlu()
+          && resource.data.reportedBy == request.auth.uid
+          && request.resource.data.reportedBy == resource.data.reportedBy
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'title', 'description', 'category', 'location',
+              'reporterName', 'imageUrl', 'photoUrls', 'updatedAt'
+            ]));
+
+      allow delete: if staff()
+        || (verifiedAlu() && resource.data.reportedBy == request.auth.uid);
+    }
   }
-  match /incidents/{id} {
-   allow read: if verifiedAlu();
-   allow create: if verifiedAlu() && request.resource.data.reportedBy == request.auth.uid && request.resource.data.status == 'Submitted';
-   allow update: if staff() || (verifiedAlu() && resource.data.reportedBy == request.auth.uid && request.resource.data.reportedBy == resource.data.reportedBy && request.resource.data.status == resource.data.status);
-   allow delete: if staff() || (verifiedAlu() && resource.data.reportedBy == request.auth.uid);
-  }
- }
 }

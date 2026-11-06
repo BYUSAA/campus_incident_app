@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_constants.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
 import '../widgets/incident_card.dart';
 
@@ -16,61 +18,63 @@ class _MyIncidentsScreenState extends State<MyIncidentsScreen> {
   String _selectedFilter = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthProvider>().user;
+      if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = context.watch<IncidentProvider>();
-    
-    // Filter logic
-    final filteredIncidents = provider.incidents.where((incident) {
-      if (_selectedFilter == 'All') return true;
-      return incident.status == _selectedFilter;
+    final filtered = provider.incidents.where((incident) {
+      return _selectedFilter == 'All' || incident.status == _selectedFilter;
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Reports'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
+      appBar: AppBar(title: const Text('My Reports')),
       body: Column(
         children: [
-          // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               children: ['All', 'Submitted', 'In Progress', 'Resolved'].map((filter) {
-                final isSelected = _selectedFilter == filter;
+                final selected = _selectedFilter == filter;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
+                  padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     label: Text(filter),
-                    selected: isSelected,
-                    onSelected: (val) => setState(() => _selectedFilter = filter),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _selectedFilter = filter),
                     selectedColor: AppConstants.primaryColor,
-                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                    labelStyle: TextStyle(color: selected ? Colors.white : Colors.black87),
                   ),
                 );
               }).toList(),
             ),
           ),
-          
           Expanded(
-            child: provider.isLoading
+            child: provider.isLoading && provider.incidents.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : filteredIncidents.isEmpty
-                    ? const Center(child: Text('No reports found.'))
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: filteredIncidents.length,
-                        itemBuilder: (context, index) {
-                          final incident = filteredIncidents[index];
-                          return IncidentCard(
-                            incident: incident,
-                            onTap: () => context.push('/incident-details', extra: incident),
-                          );
-                        },
-                      ),
+                : provider.errorMessage != null
+                    ? Center(child: Text('Could not load your reports: ${provider.errorMessage}'))
+                    : filtered.isEmpty
+                        ? const Center(child: Text('You have no reports in this status.'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(20),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final incident = filtered[index];
+                              return IncidentCard(
+                                incident: incident,
+                                onTap: () => context.push('/incident-details', extra: incident),
+                              );
+                            },
+                          ),
           ),
         ],
       ),

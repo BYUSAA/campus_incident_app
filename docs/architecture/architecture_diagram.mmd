@@ -1,0 +1,37 @@
+flowchart LR
+    subgraph UI[Flutter UI]
+      Screens[Feature screens and shared widgets]
+    end
+    subgraph State[Provider state]
+      Auth[AuthProvider]
+      Incidents[IncidentProvider]
+    end
+    subgraph Domain[Repositories]
+      AuthRepo[AuthRepository]
+      UserRepo[UserRepository]
+      IncidentRepo[IncidentRepository]
+    end
+    subgraph Services[Firebase services]
+      AuthService[FirebaseAuthService]
+      Verification[EmailVerificationService]
+      FirestoreService[FirestoreService]
+      Storage[StorageService]
+    end
+    FirebaseAuth[(Firebase Authentication)]
+    Firestore[(Cloud Firestore)]
+    FirebaseStorage[(Firebase Storage)]
+
+    Screens --> Auth
+    Screens --> Incidents
+    Auth --> AuthRepo
+    AuthRepo --> AuthService
+    AuthRepo --> UserRepo
+    AuthRepo --> Verification
+    UserRepo --> FirestoreService
+    Incidents --> IncidentRepo
+    IncidentRepo --> FirestoreService
+    IncidentRepo --> Storage
+    AuthService --> FirebaseAuth
+    Verification --> FirebaseAuth
+    FirestoreService --> Firestore
+    Storage --> FirebaseStorage

@@ -1,10 +1,17 @@
 class AppUser {
+  const AppUser({
+    required this.uid,
+    required this.name,
+    required this.email,
+    required this.role,
+  });
+
   final String uid;
   final String name;
   final String email;
-  final String role; // 'student' or 'staff'
+  final String role;
 
-  AppUser({required this.uid, required this.name, required this.email, required this.role});
+  bool get isStaff => role == 'staff';
 
   Map<String, dynamic> toMap() => {
         'uid': uid,
@@ -14,9 +21,9 @@ class AppUser {
       };
 
   factory AppUser.fromMap(Map<String, dynamic> map) => AppUser(
-        uid: map['uid'] ?? '',
-        name: map['name'] ?? '',
-        email: map['email'] ?? '',
-        role: map['role'] ?? 'student',
+        uid: map['uid'] as String? ?? '',
+        name: map['name'] as String? ?? '',
+        email: map['email'] as String? ?? '',
+        role: map['role'] as String? ?? 'student',
       );
 }

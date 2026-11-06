@@ -1,31 +1,92 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+
+import '../models/app_user.dart';
 import '../models/incident.dart';
+import '../repositories/incident_repository.dart';
 import '../services/firestore_service.dart';
+import '../services/storage_service.dart';
 
 class IncidentProvider extends ChangeNotifier {
-  final FirestoreService _firestoreService = FirestoreService();
-  List<Incident> _incidents = [];
-  bool _isLoading = false;
+  IncidentProvider({IncidentRepository? repository})
+      : _repository = repository ??
+            IncidentRepository(FirestoreService(), StorageService());
 
-  List<Incident> get incidents => _incidents;
+  final IncidentRepository _repository;
+  StreamSubscription<List<Incident>>? _subscription;
+
+  List<Incident> _incidents = const [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<Incident> get incidents => List.unmodifiable(_incidents);
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  void watchForUser(AppUser user) {
+    if (user.role == 'staff') {
+      fetchAllIncidents();
+    } else {
+      fetchUserIncidents(user.uid);
+    }
+  }
 
   void fetchUserIncidents(String uid) {
+    _subscribe(_repository.watchMine(uid));
+  }
+
+  void fetchAllIncidents() {
+    _subscribe(_repository.watchAll());
+  }
+
+  void _subscribe(Stream<List<Incident>> stream) {
+    _subscription?.cancel();
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-    
-    _firestoreService.getUserIncidents(uid).listen((data) {
-      _incidents = data;
-      _isLoading = false;
-      notifyListeners();
-    });
+
+    _subscription = stream.listen(
+      (items) {
+        _incidents = items;
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (Object error) {
+        _isLoading = false;
+        _errorMessage = error.toString();
+        notifyListeners();
+      },
+    );
   }
 
-  Future<void> submitIncident(Incident incident) async {
-    await _firestoreService.createIncident(incident);
+  Future<void> submitIncident(Incident incident, {File? photo}) async {
+    await _repository.create(
+      title: incident.title,
+      description: incident.description,
+      category: incident.category,
+      location: incident.location,
+      uid: incident.reportedBy,
+      reporterName: incident.reporterName ?? '',
+      photo: photo,
+    );
   }
 
-  Future<void> updateStatus(String id, String status) async {
-    await _firestoreService.updateIncidentStatus(id, status);
+  Future<void> updateIncident(Incident incident, {File? photo}) {
+    return _repository.update(incident, photo: photo);
+  }
+
+  Future<void> deleteIncident(String id) => _repository.delete(id);
+
+  Future<void> updateStatus(String id, String status) {
+    return _repository.updateStatus(id, status);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 }

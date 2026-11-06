@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../constants/app_constants.dart';
 
 class AppTheme {
@@ -9,9 +10,8 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppConstants.primaryColor,
         primary: AppConstants.primaryColor,
-        background: AppConstants.bgColor,
+        surface: Colors.white,
       ),
-      fontFamily: 'Inter', // Ensure you have a font asset or use default
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -40,25 +40,27 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          borderSide: const BorderSide(color: AppConstants.primaryColor),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
-          borderSide: const BorderSide(color: AppConstants.errorColor),
         ),
       ),
-      textTheme: const TextTheme(
-        titleLarge: TextStyle(color: AppConstants.textColor, fontWeight: FontWeight.bold),
-        bodyLarge: TextStyle(color: AppConstants.textColor),
-        bodyMedium: TextStyle(color: AppConstants.greyText),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppConstants.primaryColor,
+        brightness: Brightness.dark,
+      ),
+      appBarTheme: const AppBarTheme(centerTitle: true),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF252525),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusM),
+        ),
       ),
     );
   }

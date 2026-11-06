@@ -1,10 +1,14 @@
+import '../constants/app_constants.dart';
+
 class Validators {
   static String? validateEmail(String? value) {
-    if (value == null || value.isEmpty) return 'Email is required';
-    final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    if (!regex.hasMatch(value)) return 'Enter a valid email';
-    if (!value.endsWith('@alustudent.com') && !value.endsWith('@alueducation.com')) {
-      return 'Please use an ALU email address';
+    final email = value?.trim().toLowerCase() ?? '';
+    if (email.isEmpty) return 'Email is required';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      return 'Enter a valid email address';
+    }
+    if (!email.endsWith(AppConstants.aluStudentDomain)) {
+      return 'Use your @alustudent.com email address';
     }
     return null;
   }
@@ -16,7 +20,9 @@ class Validators {
   }
 
   static String? validateRequired(String? value, String fieldName) {
-    if (value == null || value.trim().isEmpty) return '$fieldName is required';
+    if (value == null || value.trim().isEmpty) {
+      return '$fieldName is required';
+    }
     return null;
   }
 }

@@ -1,19 +1,25 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import '../../../core/constants/app_constants.dart';
+
 import '../../../core/utils/validators.dart';
 import '../../../models/incident.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
-import 'package:provider/provider.dart';
 import 'category_selector.dart';
 import 'photo_picker.dart';
 
 class IncidentForm extends StatefulWidget {
-  final Incident? initialIncident; // If not null, we are editing
-  final VoidCallback onSuccess;
+  const IncidentForm({
+    super.key,
+    this.initialIncident,
+    required this.onSuccess,
+  });
 
-  const IncidentForm({super.key, this.initialIncident, required this.onSuccess});
+  final Incident? initialIncident;
+  final VoidCallback onSuccess;
 
   @override
   State<IncidentForm> createState() => _IncidentFormState();
@@ -21,74 +27,102 @@ class IncidentForm extends StatefulWidget {
 
 class _IncidentFormState extends State<IncidentForm> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
-  late TextEditingController _descController;
-  late TextEditingController _locationController;
+  late final TextEditingController _titleController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _locationController;
+
   late String _selectedCategory;
+  File? _selectedPhoto;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.initialIncident?.title ?? '');
-    _descController = TextEditingController(text: widget.initialIncident?.description ?? '');
-    _locationController = TextEditingController(text: widget.initialIncident?.location ?? '');
-    _selectedCategory = widget.initialIncident?.category ?? 'Facilities';
+    final initial = widget.initialIncident;
+    _titleController = TextEditingController(text: initial?.title ?? '');
+    _descriptionController = TextEditingController(text: initial?.description ?? '');
+    _locationController = TextEditingController(text: initial?.location ?? '');
+    _selectedCategory = initial?.category ?? 'Facilities';
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _descController.dispose();
+    _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
   }
 
-  void _submit() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final user = context.read<AuthProvider>().user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in again before submitting.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-
     try {
-      final user = context.read<AuthProvider>().user;
-      if (user == null) return;
-
-      final incidentProvider = context.read<IncidentProvider>();
-
-      if (widget.initialIncident == null) {
-        // Create
-        final newIncident = Incident(
+      final provider = context.read<IncidentProvider>();
+      final existing = widget.initialIncident;
+      if (existing == null) {
+        final incident = Incident(
           id: const Uuid().v4(),
           title: _titleController.text.trim(),
-          description: _descController.text.trim(),
+          description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
           status: 'Submitted',
           reportedBy: user.uid,
+          reporterName: user.name,
           createdAt: DateTime.now(),
         );
-        await incidentProvider.submitIncident(newIncident);
+        await provider.submitIncident(incident, photo: _selectedPhoto);
       } else {
-        // Edit
-        final updatedIncident = Incident(
-          id: widget.initialIncident!.id,
+        final updated = existing.copyWith(
           title: _titleController.text.trim(),
-          description: _descController.text.trim(),
+          description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
-          status: widget.initialIncident!.status,
-          reportedBy: widget.initialIncident!.reportedBy,
-          createdAt: widget.initialIncident!.createdAt,
+          reporterName: user.name,
         );
-        // Note: Add updateIncident method to your IncidentProvider/FirestoreService
-        // await incidentProvider.updateIncident(updatedIncident);
+        await provider.updateIncident(updated, photo: _selectedPhoto);
       }
 
-      widget.onSuccess();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) widget.onSuccess();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save the report: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _textField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          textCapitalization: TextCapitalization.sentences,
+          validator: (value) => Validators.validateRequired(value, label),
+          decoration: InputDecoration(hintText: hint),
+        ),
+      ],
+    );
   }
 
   @override
@@ -98,50 +132,59 @@ class _IncidentFormState extends State<IncidentForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select a category', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Select a category',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           CategorySelector(
-            selectedCategory: _selectedCategory,
-            onCategorySelected: (val) => setState(() => _selectedCategory = val),
+            value: _selectedCategory,
+            onChanged: (value) => setState(() => _selectedCategory = value),
           ),
           const SizedBox(height: 24),
-          
-          _buildTextField('Title', 'Briefly describe the issue...', _titleController),
+          _textField('Title', 'Briefly describe the issue…', _titleController),
           const SizedBox(height: 16),
-          _buildTextField('Description', 'Provide more details...', _descController, maxLines: 4),
+          _textField(
+            'Description',
+            'Provide the details someone needs to respond…',
+            _descriptionController,
+            maxLines: 4,
+          ),
           const SizedBox(height: 16),
-          _buildTextField('Location', 'e.g. Block B — Room 204', _locationController),
-          
+          _textField(
+            'Location',
+            'For example: Block B, Room 204',
+            _locationController,
+          ),
           const SizedBox(height: 24),
-          const Text('Add a photo (optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Attach a photo (optional)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
-          PhotoPicker(onTap: () {}), // Implement ImagePicker logic here
-          
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading 
-                ? const CircularProgressIndicator(color: Colors.white) 
-                : Text(widget.initialIncident == null ? 'Submit Report' : 'Update Report'),
+          PhotoPicker(
+            selectedImage: _selectedPhoto,
+            onImageSelected: (file) => setState(() => _selectedPhoto = file),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _submit,
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(existingButtonLabel),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField(String label, String hint, TextEditingController controller, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          validator: (val) => Validators.validateRequired(val, label),
-          decoration: InputDecoration(hintText: hint),
-        ),
-      ],
-    );
-  }
+  String get existingButtonLabel =>
+      widget.initialIncident == null ? 'Submit Report' : 'Save Changes';
 }
