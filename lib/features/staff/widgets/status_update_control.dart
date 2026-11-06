@@ -1,1 +1,33 @@
-import 'package:flutter/material.dart';import '../../../core/constants/incident_categories.dart';class StatusUpdateControl extends StatelessWidget{const StatusUpdateControl({super.key,required this.value,required this.onChanged,this.enabled=true});final String value;final ValueChanged<String> onChanged;final bool enabled;@override Widget build(BuildContext context)=>DropdownButtonFormField<String>(value:value,decoration:const InputDecoration(labelText:'Update status'),items:IncidentCategories.statuses.map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(),onChanged:enabled?(v){if(v!=null)onChanged(v);}:null);}
+import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
+
+class StatusUpdateControl extends StatelessWidget {
+  final String currentStatus;
+  final Function(String) onStatusChanged;
+
+  const StatusUpdateControl({super.key, required this.currentStatus, required this.onStatusChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(AppConstants.radiusM),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentStatus,
+          isExpanded: true,
+          items: ['Submitted', 'In Progress', 'Resolved'].map((status) {
+            return DropdownMenuItem(value: status, child: Text(status));
+          }).toList(),
+          onChanged: (val) {
+            if (val != null) onStatusChanged(val);
+          },
+        ),
+      ),
+    );
+  }
+}
