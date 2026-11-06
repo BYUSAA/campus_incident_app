@@ -1,1 +1,20 @@
-import 'package:flutter/material.dart';import 'package:provider/provider.dart';import '../../../providers/theme_provider.dart';class SettingsScreen extends StatelessWidget{const SettingsScreen({super.key});@override Widget build(BuildContext context){final t=context.watch<ThemeProvider>();return Scaffold(appBar:AppBar(title:const Text('Settings')),body:ListView(children:[SwitchListTile(title:const Text('Dark mode'),value:t.isDark,onChanged:context.read<ThemeProvider>().toggle),const ListTile(leading:Icon(Icons.info_outline),title:Text('About'),subtitle:Text('Campus Incident Reporter'))]));}}
+import 'package:flutter/material.dart';
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        children: const [
+          SwitchListTile(title: Text('Push Notifications'), value: true, onChanged: null),
+          SwitchListTile(title: Text('Dark Mode'), value: false, onChanged: null),
+          ListTile(title: Text('Privacy Policy')),
+          ListTile(title: Text('Terms of Service')),
+        ],
+      ),
+    );
+  }
+}
