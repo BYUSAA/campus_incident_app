@@ -1,6 +1,84 @@
-import 'package:flutter/material.dart'; import 'package:provider/provider.dart';
-import '../../../core/routing/app_router.dart'; import '../../../core/utils/validators.dart'; import '../../../providers/auth_provider.dart'; import '../../../shared/widgets/app_button.dart'; import '../widgets/auth_form_field.dart';
-class RegisterScreen extends StatefulWidget { const RegisterScreen({super.key}); @override State<RegisterScreen> createState()=>_RegisterScreenState(); }
-class _RegisterScreenState extends State<RegisterScreen>{final _key=GlobalKey<FormState>();final _name=TextEditingController();final _email=TextEditingController();final _pass=TextEditingController();@override void dispose(){_name.dispose();_email.dispose();_pass.dispose();super.dispose();}
-Future<void> _register() async {if(!_key.currentState!.validate())return;final auth=context.read<AuthProvider>();final ok=await auth.register(_name.text,_email.text,_pass.text);if(!mounted)return;if(ok){Navigator.pushReplacementNamed(context,AppRouter.verifyEmail);}else{ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(auth.error??'Registration failed')));}}
-@override Widget build(BuildContext context){final auth=context.watch<AuthProvider>();return Scaffold(appBar:AppBar(title:const Text('Create account')),body:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),child:Form(key:_key,child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[AuthFormField(controller:_name,label:'Full name',validator:(v)=>Validators.required(v,label:'Name')),const SizedBox(height:12),AuthFormField(controller:_email,label:'ALU student email',validator:Validators.aluEmail,keyboardType:TextInputType.emailAddress),const SizedBox(height:12),AuthFormField(controller:_pass,label:'Password (8+ characters)',validator:Validators.password,obscureText:true),const SizedBox(height:18),AppButton(label:'Create account',loading:auth.isLoading,onPressed:_register),const Text('A verification email will be sent. Verify it before signing in.')]))))));}}
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/validators.dart';
+import '../../../providers/auth_provider.dart';
+import '../widgets/auth_form_field.dart';
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _register() async {
+    if (!_formKey.currentState!.validate()) return;
+    try {
+      await context.read<AuthProvider>().register(
+            _nameController.text.trim(),
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+          );
+      if (mounted) context.go('/verify-email');
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Create Account')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppConstants.paddingL),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              AuthFormField(
+                label: 'Full Name',
+                hint: 'Amina Hassan',
+                controller: _nameController,
+                prefixIcon: Icons.person,
+                validator: (val) => Validators.validateRequired(val, 'Name'),
+              ),
+              const SizedBox(height: 20),
+              AuthFormField(
+                label: 'ALU Email',
+                hint: 'student@alustudent.com',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.email,
+                validator: Validators.validateEmail,
+              ),
+              const SizedBox(height: 20),
+              AuthFormField(
+                label: 'Password',
+                hint: '••••••••',
+                controller: _passwordController,
+                isPassword: true,
+                prefixIcon: Icons.lock,
+                validator: Validators.validatePassword,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: isLoading ? null : _register,
+                child: isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Sign Up'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
