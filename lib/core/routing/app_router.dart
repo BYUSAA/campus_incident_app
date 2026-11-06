@@ -1,46 +1,39 @@
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../models/incident.dart';
-import '../../features/authentication/screens/login_screen.dart';
-import '../../features/home/screens/home_screen.dart';
-import '../../features/incidents/screens/create_incident_screen.dart';
-import '../../features/incidents/screens/edit_incident_screen.dart';
-import '../../features/incidents/screens/incident_details_screen.dart';
-import '../../features/incidents/screens/incident_list_screen.dart';
+// Add these imports:
+import '../../features/authentication/screens/register_screen.dart';
+import '../../features/authentication/screens/verify_email_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
+import '../../shared/layouts/app_scaffold.dart';
 
-class AppRouter {
-  static final GoRouter router = GoRouter(
-    initialLocation: '/login',
-    redirect: (context, state) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final isLoggedIn = authProvider.user != null;
-      final isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-
-      if (!isLoggedIn && !isAuthRoute) return '/login';
-      if (isLoggedIn && isAuthRoute) return '/home';
-      return null;
+// Replace your 'routes' list with this:
+routes: [
+  GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+  GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+  GoRoute(path: '/verify-email', builder: (context, state) => const VerifyEmailScreen()),
+  
+  // ShellRoute wraps screens with the Bottom Navigation Bar
+  ShellRoute(
+    builder: (context, state, child) {
+      int index = 0;
+      if (state.matchedLocation == '/incidents') index = 1;
+      if (state.matchedLocation == '/profile') index = 3;
+      // Note: '/create-incident' is usually a full screen modal, not in the nav bar, but we map it here just in case.
+      return AppScaffold(currentIndex: index, child: child);
     },
     routes: [
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      // Add RegisterRoute here if needed
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/incidents', builder: (context, state) => const IncidentListScreen()),
-      GoRoute(path: '/create-incident', builder: (context, state) => const CreateIncidentScreen()),
-      GoRoute(
-        path: '/edit-incident',
-        builder: (context, state) {
-          final incident = state.extra as Incident;
-          return EditIncidentScreen(incident: incident);
-        },
-      ),
-      GoRoute(
-        path: '/incident-details',
-        builder: (context, state) {
-          final incident = state.extra as Incident;
-          return IncidentDetailsScreen(incident: incident);
-        },
-      ),
+      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
     ],
-  );
-}
+  ),
+  
+  // Full screen routes (no bottom nav)
+  GoRoute(path: '/create-incident', builder: (context, state) => const CreateIncidentScreen()),
+  GoRoute(
+    path: '/edit-incident',
+    builder: (context, state) => EditIncidentScreen(incident: state.extra as Incident),
+  ),
+  GoRoute(
+    path: '/incident-details',
+    builder: (context, state) => IncidentDetailsScreen(incident: state.extra as Incident),
+  ),
+],
