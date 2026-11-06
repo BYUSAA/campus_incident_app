@@ -1,1 +1,81 @@
-import 'package:flutter/material.dart';import 'package:provider/provider.dart';import '../../../core/routing/app_router.dart';import '../../../providers/incident_provider.dart';import '../../../shared/widgets/empty_state.dart';import '../../../shared/widgets/loading_indicator.dart';import '../../../shared/widgets/error_message.dart';import '../widgets/incident_card.dart';import '../widgets/incident_filter_sheet.dart';import '../widgets/incident_search_bar.dart';class IncidentListScreen extends StatelessWidget{const IncidentListScreen({super.key});@override Widget build(BuildContext context){final p=context.watch<IncidentProvider>();return Scaffold(appBar:AppBar(title:const Text('All incidents'),actions:[IconButton(icon:const Icon(Icons.filter_list),onPressed:()=>showModalBottomSheet<void>(context:context,isScrollControlled:true,builder:(_)=>Consumer<IncidentProvider>(builder:(context,p,_)=>IncidentFilterSheet(category:p.selectedCategory,status:p.selectedStatus,onCategoryChanged:p.setCategory,onStatusChanged:p.setStatus))))]),body:Column(children:[Padding(padding:const EdgeInsets.all(16),child:IncidentSearchBar(onChanged:p.setSearch)),Expanded(child:p.isLoading&&p.incidents.isEmpty?const LoadingIndicator():p.error!=null?ErrorMessage(message:p.error!,onRetry:p.subscribeToIncidents):p.incidents.isEmpty?const EmptyState(title:'No incidents found',message:'Try another search or report an issue.'):ListView.builder(itemCount:p.incidents.length,itemBuilder:(context,i){final item=p.incidents[i];return IncidentCard(incident:item,onTap:()=>Navigator.pushNamed(context,AppRouter.incidentDetails,arguments:item.id));}))]),floatingActionButton:FloatingActionButton.extended(onPressed:()=>Navigator.pushNamed(context,AppRouter.createIncident),icon:const Icon(Icons.add),label:const Text('Report')));}}
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../providers/incident_provider.dart';
+import '../widgets/incident_card.dart';
+import '../widgets/incident_search_bar.dart';
+import '../widgets/incident_filter_sheet.dart';
+
+class IncidentListScreen extends StatefulWidget {
+  const IncidentListScreen({super.key});
+
+  @override
+  State<IncidentListScreen> createState() => _IncidentListScreenState();
+}
+
+class _IncidentListScreenState extends State<IncidentListScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _statusFilter = 'All';
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<IncidentProvider>();
+
+    final filteredIncidents = provider.incidents.where((incident) {
+      final matchesSearch = incident.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          incident.location.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesFilter = _statusFilter == 'All' || incident.status == _statusFilter;
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('All Reports'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => IncidentFilterSheet(
+                  currentFilter: _statusFilter,
+                  onFilterSelected: (val) => setState(() => _statusFilter = val),
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppConstants.paddingM),
+            child: IncidentSearchBar(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val),
+            ),
+          ),
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredIncidents.isEmpty
+                    ? const Center(child: Text('No reports found.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingM),
+                        itemCount: filteredIncidents.length,
+                        itemBuilder: (context, index) {
+                          final incident = filteredIncidents[index];
+                          return IncidentCard(
+                            incident: incident,
+                            onTap: () => context.push('/incident-details', extra: incident),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
