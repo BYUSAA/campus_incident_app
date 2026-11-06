@@ -1,11 +1,17 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../core/errors/app_exceptions.dart';
+
 class StorageService {
-  StorageService({FirebaseStorage? storage}):_storage=storage ?? FirebaseStorage.instance;
-  final FirebaseStorage _storage;
-  Future<String> uploadIncidentPhoto({required File file,required String uid}) async {
-    final ref=_storage.ref('incident_photos/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg');
-    final snap=await ref.putFile(file,SettableMetadata(contentType:'image/jpeg'));
-    return snap.ref.getDownloadURL();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  Future<String> uploadIncidentImage(File file, String incidentId) async {
+    try {
+      final ref = _storage.ref().child('incidents').child(incidentId).child('image.jpg');
+      final uploadTask = await ref.putFile(file);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      throw StorageException('Failed to upload image: $e');
+    }
   }
 }
