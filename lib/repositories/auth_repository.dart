@@ -1,30 +1,95 @@
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../core/constants/app_constants.dart';
 import '../models/app_user.dart';
 import '../services/email_verification_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/firestore_service.dart';
 import 'user_repository.dart';
+
 class AuthRepository {
-  AuthRepository(this._auth,this._users,this._verification);
-  final FirebaseAuthService _auth; final UserRepository _users; final EmailVerificationService _verification;
-  User? get currentUser=>_auth.currentUser;
-  Stream<User?> get authStateChanges=>_auth.authStateChanges;
-  Future<void> register({required String name,required String email,required String password}) async {
-    final normalized=email.trim().toLowerCase();
-    if(!normalized.endsWith(AppConstants.aluStudentDomain)) throw Exception('Please use your ALU student email.');
-    final cred=await _auth.register(normalized,password); final user=cred.user;
-    if(user==null) throw Exception('Could not create user.');
-    await _users.create(AppUser(uid:user.uid,name:name.trim(),email:normalized,role:'student'));
-    await _verification.send(user);
+  AuthRepository(this._auth, this._users, this._verification);
+
+  final FirebaseAuthService _auth;
+  final UserRepository _users;
+  final EmailVerificationService _verification;
+
+  User? get currentUser => _auth.currentUser;
+  Stream<User?> get authStateChanges => _auth.authStateChanges;
+
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.endsWith(AppConstants.aluStudentDomain)) {
+      throw ArgumentError('Please register with your @alustudent.com email address.');
+    }
+    if (name.trim().isEmpty) {
+      throw ArgumentError('Your full name is required.');
+    }
+
+    final credential = await _auth.register(
+      email: normalizedEmail,
+      password: password,
+    );
+    final firebaseUser = credential.user;
+    if (firebaseUser == null) {
+      throw StateError('Firebase did not return the newly created account.');
+    }
+
+    await firebaseUser.updateDisplayName(name.trim());
+    await _users.create(
+      AppUser(
+        uid: firebaseUser.uid,
+        name: name.trim(),
+        email: normalizedEmail,
+        role: 'student',
+      ),
+    );
+    await _verification.send(firebaseUser);
   }
-  Future<void> login(String email,String password) async {
-    await _auth.login(email,password); final user=_auth.currentUser;
-    if(user==null) throw Exception('Could not load user.');
-    await user.reload();
-    if(!(_auth.currentUser?.emailVerified ?? false)){await _auth.logout();throw Exception('Verify your email before signing in.');}
+
+  Future<AppUser?> login(String email, String password) async {
+    await _auth.login(email, password);
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) {
+      throw StateError('Firebase did not return the signed-in account.');
+    }
+
+    await firebaseUser.reload();
+    final refreshedUser = _auth.currentUser;
+    if (refreshedUser == null || !refreshedUser.emailVerified) {
+      await _auth.logout();
+      throw StateError('Verify your ALU email address before signing in.');
+    }
+
+    final profile = await loadProfile(refreshedUser.uid);
+    if (profile == null) {
+      throw StateError('Your account profile is missing. Contact the project administrator.');
+    }
+    return profile;
   }
-  Future<void> resendVerification()=>_auth.sendVerificationEmail();
-  Future<void> refreshUser()=>_auth.reloadUser();
-  Future<void> logout()=>_auth.logout();
-  Future<AppUser?> loadProfile(String uid)=>_users.getById(uid);
+
+  Future<void> resendVerification() => _auth.sendVerificationEmail();
+
+  Future<void> logout() => _auth.logout();
+
+  Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
+
+  Future<bool> refreshVerification() async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return false;
+    return _verification.refreshAndCheck(firebaseUser);
+  }
+
+  factory AuthRepository.createDefault() {
+    final firestore = FirestoreService();
+    return AuthRepository(
+      FirebaseAuthService(),
+      UserRepository(firestore),
+      EmailVerificationService(),
+    );
+  }
 }

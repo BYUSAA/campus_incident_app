@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
+import '../../../core/constants/app_constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../incidents/widgets/incident_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,51 +18,62 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AuthProvider>().user;
-    if (user != null) {
-      context.read<IncidentProvider>().fetchUserIncidents(user.uid);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
-    final incidentProvider = context.watch<IncidentProvider>();
+    final incidents = context.watch<IncidentProvider>();
+
+    final total = incidents.incidents.length;
+    final inProgress = incidents.incidents.where((item) => item.status == 'In Progress').length;
+    final resolved = incidents.incidents.where((item) => item.status == 'Resolved').length;
+    final submitted = incidents.incidents.where((item) => item.status == 'Submitted').length;
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(AppConstants.paddingL),
             children: [
-              // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Hello, ${user?.name.split(' ').first ?? 'Student'} 👋',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                      const Text('Help make our campus safer.',
-                          style: TextStyle(color: Colors.grey)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hello, ${user?.name.split(' ').first ?? 'Student'}',
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text('Help make our campus safer.', style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
                   ),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 25,
-                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=47'), // Placeholder
+                    backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
+                    child: const Icon(Icons.person_outline, color: AppConstants.primaryColor),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Banner
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF7B61FF), Color(0xFF9D8CFF)],
+                    colors: [Color(0xFF6B4EFF), Color(0xFF9D8CFF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -70,72 +82,75 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('See an issue\non campus?',
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'See an issue on campus?',
+                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
-                    const Text('Report it and help improve our learning environment.',
-                        style: TextStyle(color: Colors.white70)),
+                    const Text(
+                      'Report it with the location and details so the right team can respond.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => context.push('/create-incident'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: AppConstants.primaryColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       ),
-                      icon: const Icon(Icons.add, size: 20),
+                      icon: const Icon(Icons.add),
                       label: const Text('Report an Issue'),
-                    )
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Report Summary
-              const Text('Report Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Your report summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _summaryCard('12', 'My Reports', Colors.purple),
-                  _summaryCard('5', 'In Progress', Colors.blue),
-                  _summaryCard('4', 'Resolved', Colors.green),
-                  _summaryCard('3', 'Submitted', Colors.orange),
+                  _summaryCard(total.toString(), 'All', AppConstants.primaryColor),
+                  _summaryCard(submitted.toString(), 'Submitted', Colors.orange),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _summaryCard(inProgress.toString(), 'In progress', Colors.blue),
+                  _summaryCard(resolved.toString(), 'Resolved', Colors.green),
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Recent Reports
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Recent Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('Recent reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   TextButton(
                     onPressed: () => context.push('/my-incidents'),
                     child: const Text('See all'),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              
-              // List
-              if (incidentProvider.isLoading)
-                const Center(child: CircularProgressIndicator())
-              else if (incidentProvider.incidents.isEmpty)
-                const Center(child: Text('No incidents reported yet.'))
+              if (incidents.isLoading && incidents.incidents.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (incidents.errorMessage != null)
+                Text('Could not load reports: ${incidents.errorMessage}')
+              else if (incidents.incidents.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: Text('You have not submitted an incident yet.')),
+                )
               else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: incidentProvider.incidents.take(3).length,
-                  itemBuilder: (context, index) {
-                    final incident = incidentProvider.incidents[index];
-                    return IncidentCard(
-                      incident: incident,
-                      onTap: () => context.push('/incident-details', extra: incident),
-                    );
-                  },
+                ...incidents.incidents.take(3).map(
+                  (incident) => IncidentCard(
+                    incident: incident,
+                    onTap: () => context.push('/incident-details', extra: incident),
+                  ),
                 ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -155,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           children: [
-            Text(count, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
             Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
