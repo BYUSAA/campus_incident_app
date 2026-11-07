@@ -19,6 +19,7 @@ class FakeIncidentRepository implements IncidentRepository {
   );
 
   String? lastWatchedUid;
+  int watchMineCalls = 0;
   String? lastCreatedBy;
   String? lastCreatedTitle;
   String? lastUpdatedStatus;
@@ -34,6 +35,7 @@ class FakeIncidentRepository implements IncidentRepository {
 
   @override
   Stream<List<Incident>> watchMine(String uid) {
+    watchMineCalls++;
     lastWatchedUid = uid;
     return Stream.value(
       uid == 'student-1' ? [sample] : <Incident>[],
@@ -108,6 +110,62 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(provider.incidents, isEmpty);
+      provider.dispose();
+    });
+
+    test('does not create duplicate listeners for the same user', () async {
+      final repository = FakeIncidentRepository();
+      final provider = IncidentProvider(repository: repository);
+      const student = AppUser(
+        uid: 'student-1',
+        name: 'Student One',
+        email: 'student-1@alustudent.com',
+        role: 'student',
+      );
+
+      provider.watchForUser(student);
+      provider.watchForUser(student);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(repository.watchMineCalls, 1);
+      expect(provider.activeScope, 'student:student-1');
+      provider.dispose();
+    });
+
+    test('clears the user feed and ignores subsequent stale snapshots', () async {
+      final provider = IncidentProvider(
+        repository: FakeIncidentRepository(),
+      );
+      const student = AppUser(
+        uid: 'student-1',
+        name: 'Student One',
+        email: 'student-1@alustudent.com',
+        role: 'student',
+      );
+
+      provider.watchForUser(student);
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.incidents, hasLength(1));
+
+      provider.clear();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(provider.incidents, isEmpty);
+      expect(provider.activeScope, isNull);
+      expect(provider.isLoading, isFalse);
+      provider.dispose();
+    });
+
+    test('looks up the latest incident by ID', () async {
+      final provider = IncidentProvider(
+        repository: FakeIncidentRepository(),
+      );
+
+      provider.fetchUserIncidents('student-1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(provider.findById('incident-1')?.title, 'Leaking tap');
+      expect(provider.findById('missing'), isNull);
       provider.dispose();
     });
 
