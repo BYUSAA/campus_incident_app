@@ -36,55 +36,66 @@ class AppRouter {
   static const staffDashboard = '/staff';
   static const manageIncident = '/staff/manage';
 
+  /// Pure route policy, kept separate so authorization navigation can be
+  /// tested without constructing Firebase Authentication objects.
+  static String? redirectFor({
+    required String path,
+    required bool isInitialized,
+    required bool hasFirebaseUser,
+    required bool emailVerified,
+    required bool hasProfile,
+    required bool isStaff,
+  }) {
+    if (!isInitialized) {
+      return path == '/splash' ? null : '/splash';
+    }
+
+    if (!hasFirebaseUser) {
+      return path == login || path == register ? null : login;
+    }
+
+    if (!emailVerified) {
+      return path == verifyEmail ? null : verifyEmail;
+    }
+
+    if (!hasProfile) {
+      return path == profileRecovery ? null : profileRecovery;
+    }
+
+    if (isStaff) {
+      // Staff accounts are limited to the review queue and its management
+      // screen. They do not enter student submission or profile routes.
+      return path == staffDashboard || path == manageIncident
+          ? null
+          : staffDashboard;
+    }
+
+    if (path == staffDashboard || path == manageIncident) return home;
+
+    if (path == '/splash' ||
+        path == login ||
+        path == register ||
+        path == verifyEmail ||
+        path == profileRecovery) {
+      return home;
+    }
+
+    return null;
+  }
+
   static GoRouter create(AuthProvider auth) {
     return GoRouter(
       initialLocation: '/splash',
       refreshListenable: auth,
       redirect: (context, state) {
-        final path = state.matchedLocation;
-
-        // Do not expose protected pages until the current auth session and
-        // its application profile have both been resolved.
-        if (!auth.isInitialized) {
-          return path == '/splash' ? null : '/splash';
-        }
-
-        final firebaseUser = auth.firebaseUser;
-        if (firebaseUser == null) {
-          return path == login || path == register ? null : login;
-        }
-
-        if (!auth.isEmailVerified) {
-          return path == verifyEmail ? null : verifyEmail;
-        }
-
-        final appUser = auth.user;
-        if (appUser == null) {
-          return path == profileRecovery ? null : profileRecovery;
-        }
-
-        final isStaff = appUser.isStaff;
-        if (isStaff) {
-          if (path == '/splash' ||
-              path == login ||
-              path == register ||
-              path == verifyEmail ||
-              path == home) {
-            return staffDashboard;
-          }
-        } else {
-          if (path == staffDashboard || path == manageIncident) {
-            return home;
-          }
-          if (path == '/splash' ||
-              path == login ||
-              path == register ||
-              path == verifyEmail ||
-              path == profileRecovery) {
-            return home;
-          }
-        }
-        return null;
+        return redirectFor(
+          path: state.matchedLocation,
+          isInitialized: auth.isInitialized,
+          hasFirebaseUser: auth.firebaseUser != null,
+          emailVerified: auth.isEmailVerified,
+          hasProfile: auth.user != null,
+          isStaff: auth.user?.isStaff ?? false,
+        );
       },
       routes: [
         GoRoute(
@@ -122,9 +133,18 @@ class AppRouter {
             return AppScaffold(currentIndex: index, child: child);
           },
           routes: [
-            GoRoute(path: home, builder: (context, state) => const HomeScreen()),
-            GoRoute(path: incidents, builder: (context, state) => const IncidentListScreen()),
-            GoRoute(path: profile, builder: (context, state) => const ProfileScreen()),
+            GoRoute(
+              path: home,
+              builder: (context, state) => const HomeScreen(),
+            ),
+            GoRoute(
+              path: incidents,
+              builder: (context, state) => const IncidentListScreen(),
+            ),
+            GoRoute(
+              path: profile,
+              builder: (context, state) => const ProfileScreen(),
+            ),
           ],
         ),
         GoRoute(
