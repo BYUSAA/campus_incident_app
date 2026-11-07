@@ -1,0 +1,123 @@
+name: Generate missing Android platform
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-platform-bootstrap-main
+  cancel-in-progress: false
+
+jobs:
+  generate-android:
+    name: Generate and commit the Android runner
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check whether the Android runner is missing
+        id: check
+        shell: bash
+        run: |
+          if [ -f android/app/src/main/AndroidManifest.xml ]; then
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+            echo "Android runner already exists; no generation is required."
+          else
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+            echo "AndroidManifest.xml is missing; generating the Android runner."
+          fi
+
+      - name: Set up Java
+        if: steps.check.outputs.generate == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        if: steps.check.outputs.generate == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.2'
+          cache: true
+
+      - name: Generate Android platform files
+        if: steps.check.outputs.generate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          readme_backup="$RUNNER_TEMP/android-README.md"
+          if [ -f android/README.md ]; then
+            cp android/README.md "$readme_backup"
+          fi
+
+          rm -rf android
+          flutter create --platforms=android --org com.byusa .
+
+          if [ -f "$readme_backup" ]; then
+            cp "$readme_backup" android/README.md
+          fi
+
+          if [ -f android/app/build.gradle.kts ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/build.gradle.kts")
+          source = path.read_text(encoding="utf-8")
+          updated = source.replace(
+              "minSdk = flutter.minSdkVersion",
+              "minSdk = 24",
+          )
+          if updated == source and "minSdk = 24" not in source:
+              raise SystemExit("Could not set Android minSdk to API 24.")
+          path.write_text(updated, encoding="utf-8")
+          PY
+          elif [ -f android/app/build.gradle ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/build.gradle")
+          source = path.read_text(encoding="utf-8")
+          updated = source.replace(
+              "minSdkVersion flutter.minSdkVersion",
+              "minSdkVersion 24",
+          )
+          if updated == source and "minSdkVersion 24" not in source:
+              raise SystemExit("Could not set Android minSdkVersion to API 24.")
+          path.write_text(updated, encoding="utf-8")
+          PY
+          else
+            echo "Flutter did not generate an Android app Gradle file."
+            exit 1
+          fi
+
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/gradlew
+          test -f android/gradlew.bat
+          test -f android/gradle/wrapper/gradle-wrapper.jar
+          grep -R -E 'minSdk(Version)?[[:space:]]*=?[[:space:]]*24' android/app/build.gradle* >/dev/null
+          echo "Android runner generated and required files verified."
+
+      - name: Commit Android runner directly to main
+        if: steps.check.outputs.generate == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android
+          if [ -f .metadata ]; then
+            git add -f .metadata
+          fi
+          git commit -m "Add generated Android platform runner"
+          git push origin HEAD:main
