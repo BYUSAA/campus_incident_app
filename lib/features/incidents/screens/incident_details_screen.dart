@@ -133,23 +133,29 @@ class IncidentDetailsScreen extends StatelessWidget {
   }
 
   Widget _imagePlaceholder() {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppConstants.radiusL),
       ),
-      child: const Icon(Icons.image_outlined, color: Colors.grey, size: 48),
+      child: Icon(
+        Icons.image_outlined,
+        color: colors.onSurfaceVariant,
+        size: 48,
+      ),
     );
   }
 
   Widget _statusBadge(String status) {
+    final colors = Theme.of(context).colorScheme;
     final color = status == 'Resolved'
-        ? Colors.green
+        ? colors.tertiary
         : status == 'In Progress'
-            ? Colors.blue
-            : Colors.orange;
+            ? colors.primary
+            : colors.secondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -180,7 +186,7 @@ class IncidentDetailsScreen extends StatelessWidget {
                 width: 25,
                 height: 25,
                 decoration: BoxDecoration(
-                  color: active ? AppConstants.primaryColor : Colors.grey.shade300,
+                  color: active ? AppConstants.primaryColor : Theme.of(context).colorScheme.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
                 child: active
@@ -193,7 +199,7 @@ class IncidentDetailsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
-                  color: active ? AppConstants.primaryColor : Colors.grey,
+                  color: active ? AppConstants.primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
