@@ -64,7 +64,20 @@ See [the architecture guide](docs/architecture/README.md) and [Mermaid diagram](
 
 ## Requirements
 
-Install Flutter stable, Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
+Install Flutter stable, Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, **JDK 17 or JDK 21**, Firebase CLI, and FlutterFire CLI. JDK 17 is used by the repository's CI workflow.
+
+### Android Java / Gradle compatibility
+
+The Android project currently uses Gradle 8.14.3 and Android Gradle Plugin 8.13.2. Use JDK 17 (the CI version) or JDK 21 for local Android builds. **JDK 25 is not compatible with the committed Gradle 8.14.3 wrapper**; changing Dart source files will not fix this toolchain error, and upgrading only the Gradle wrapper is not a safe substitute.
+
+On Windows, configure Flutter to use an installed JDK 17 or 21. Replace the example path with the actual JDK directory on your computer (the directory containing `bin\\java.exe` and `bin\\javac.exe`):
+
+```powershell
+flutter config --jdk-dir="C:\\path\\to\\jdk-17-or-21"
+flutter doctor -v
+```
+
+Check the Java version reported under **Android toolchain** in `flutter doctor -v` before running the app. This Flutter setting is stored on the developer's machine and should not be committed to the repository.
 
 ```powershell
 flutter doctor -v
