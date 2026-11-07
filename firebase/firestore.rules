@@ -22,6 +22,19 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
     }
 
+    function validIncidentContent(data) {
+      return data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 100
+        && data.description is string
+        && data.description.size() > 0
+        && data.description.size() <= 1000
+        && data.category in ['Facilities', 'Water', 'Electricity', 'Safety', 'Sanitation']
+        && data.location is string
+        && data.location.size() > 0
+        && data.location.size() <= 160;
+    }
+
     match /users/{uid} {
       // A newly created ALU account may create its own student profile before
       // verifying email. All incident access still requires email verification.
@@ -62,12 +75,7 @@ service cloud.firestore {
       allow create: if verifiedAlu()
         && request.resource.data.reportedBy == request.auth.uid
         && request.resource.data.status == 'Submitted'
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.description is string
-        && request.resource.data.description.size() > 0
-        && request.resource.data.category is string
-        && request.resource.data.location is string
+        && validIncidentContent(request.resource.data)
         && request.resource.data.keys().hasOnly([
           'title', 'description', 'category', 'location', 'reportedBy',
           'reporterName', 'status', 'createdAt', 'updatedAt',
@@ -78,21 +86,29 @@ service cloud.firestore {
           'status', 'createdAt', 'updatedAt'
         ]);
 
-      allow update: if staff()
+      // Staff can moderate status/assignment. Students can only edit the
+      // content of their own reports while the report is still Submitted.
+      // This restriction is enforced here as well as in the user interface.
+      allow update: if (
+        staff()
         && request.resource.data.reportedBy == resource.data.reportedBy
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'updatedAt', 'assignedTo'])
         && request.resource.data.status in ['Submitted', 'In Progress', 'Resolved']
-        || (verifiedAlu()
-          && resource.data.reportedBy == request.auth.uid
-          && request.resource.data.reportedBy == resource.data.reportedBy
-          && request.resource.data.status == resource.data.status
-          && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([
-              'title', 'description', 'category', 'location',
-              'reporterName', 'imageUrl', 'photoUrls', 'updatedAt'
-            ]));
+      ) || (
+        verifiedAlu()
+        && resource.data.reportedBy == request.auth.uid
+        && resource.data.status == 'Submitted'
+        && request.resource.data.reportedBy == resource.data.reportedBy
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validIncidentContent(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'title', 'description', 'category', 'location',
+            'reporterName', 'imageUrl', 'photoUrls', 'updatedAt'
+          ])
+      );
 
       allow delete: if staff()
         || (verifiedAlu() && resource.data.reportedBy == request.auth.uid);

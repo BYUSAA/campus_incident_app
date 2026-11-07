@@ -1,176 +1,218 @@
 # Campus Incident Reporter — Technical Report
 
-> **Submission evidence note:** This report describes the repository implementation and its design. Device screenshots, Firebase Console evidence, observed test results, and the demo-video link must be added after the application has been configured and run. No results or evidence are invented here.
+**Assignment:** Individual Assignment 2 — Campus Incident Reporting App  
+**Platform:** Flutter for Android  
+**Backend:** Firebase Authentication, Cloud Firestore, and Firebase Storage  
+**State management:** Provider with ChangeNotifier  
+**Citation style:** IEEE
+
+> **Submission status:** This is an implementation-based report draft. Project-specific Firebase configuration, generated Android runner files, live Firebase evidence, real-device test results, screenshots, and the required 7–10 minute demonstration URL must be added by the student after running the app. No credentials, test outcomes, screenshots, or demo links are invented. Export the completed report as PDF before uploading it to Canvas.
+
+## Abstract
+
+Campus Incident Reporter is a mobile application intended to improve how students communicate campus maintenance and safety issues to authorized staff. Students can register with an ALU student email address, verify their email, submit an incident with a category, description, location, and optional photograph, then follow the report status. Authorized staff can review the incident queue and update report status. The project uses Flutter for the mobile interface and Firebase services for authentication, persistent data, and image storage. Provider separates shared application state from presentation widgets.
 
 ## 1. Introduction
 
-Campus incidents such as damaged facilities, sanitation problems, water interruptions, electrical faults, and safety concerns need a clear way to be reported and followed up. Campus Incident Reporter is a Flutter mobile application backed by Firebase. It gives students a structured way to submit an incident and check its status. Authorized staff can review reports and update their progress.
+Campus facilities issues such as water interruptions, electrical faults, damaged classroom equipment, sanitation problems, and safety concerns can affect students' ability to learn and work. A structured reporting channel helps capture the issue, its location, and enough context for follow-up.
 
-The main objectives are to collect consistent report information, keep reports associated with their creator, provide a simple status lifecycle, and apply access control in Firebase rather than relying only on what the interface displays.
+The application was developed with Flutter, a framework for building mobile interfaces from a shared widget system [1]. Firebase provides the backend services used for sign-in, report persistence, and optional image uploads [2]. The main objectives are to collect consistent incident information, associate each report with its creator, let users follow a clear status lifecycle, allow authorized staff to review and process reports, and enforce access rules in the backend rather than relying only on hidden interface controls.
 
 ## 2. Users and functional scope
 
-### Student
+### 2.1 Student
 
-A student can create an account with an `@alustudent.com` address, verify the address, sign in, submit a report, attach an optional image, search and filter their reports, view report details, edit a report while it is still Submitted, and delete their own report.
+A student account is created with an @alustudent.com email address. The student must verify the email before accessing incident functionality. Students can submit incidents, attach an optional photograph, view and search their own reports, filter by status, inspect report details, and edit or delete their own reports while the status remains **Submitted**.
 
-### Staff
+The student feed is intentionally limited to the signed-in student's reports. This is a privacy decision: the application does not expose other students' submissions to every student account.
 
-A staff member uses a separate account that has been assigned the `staff` role through a trusted Firebase administrator process. Staff can view the incident queue and update report status to Submitted, In Progress, or Resolved. Regular users cannot promote themselves to staff.
+### 2.2 Authorized staff
+
+Staff use a separate verified ALU account. A trusted Firebase administrator must assign the staff role in the corresponding users/{uid} document. Staff can view the campus incident queue, inspect submitted details, and update report status to **Submitted**, **In Progress**, or **Resolved**.
+
+There is no in-app role switch. A student cannot grant themselves staff access through the client.
 
 ## 3. Technical architecture
 
-The project separates responsibilities so that screens do not call Firebase directly:
+The codebase separates presentation, state, application workflows, Firebase access, and data models. This separation reduces direct Firebase calls from screens and makes the main workflows easier to maintain.
 
-- **Features and shared widgets:** presentation and user interaction.
-- **Providers:** application state and Firestore stream subscriptions.
-- **Repositories:** use-case coordination and data mapping.
-- **Services:** Firebase Authentication, Cloud Firestore, Firebase Storage, and verification email calls.
-- **Models:** typed user and incident data.
+| Layer | Project location | Responsibility |
+| --- | --- | --- |
+| Presentation | lib/features/, lib/shared/ | Screens, forms, report cards, navigation |
+| State management | lib/providers/ | Authentication, incident streams, theme state |
+| Application workflows | lib/repositories/ | Registration, profile loading, incident operations |
+| Firebase adapters | lib/services/ | Firebase Authentication, Firestore, Storage |
+| Data models | lib/models/ | Typed user and incident data |
+| Cross-cutting concerns | lib/core/ | Routing, constants, validation, errors, themes |
 
-See [the architecture explanation](architecture/README.md) and [Mermaid diagram](architecture/architecture_diagram.mmd).
+### 3.1 Authentication data flow
 
-### Main data flow
+The registration screen calls AuthProvider, which delegates to AuthRepository. The repository creates a Firebase Authentication account, writes a student profile through UserRepository, and sends the verification email. The authentication provider listens for Firebase Auth state changes and loads the user's application profile.
 
-For registration, the screen calls `AuthProvider`, which delegates to `AuthRepository`. The repository creates the Firebase Authentication account, writes a student profile through `UserRepository`, and sends a verification email.
+### 3.2 Incident submission data flow
 
-For an incident, `IncidentForm` calls `IncidentProvider`. `IncidentRepository` optionally uploads a photo through `StorageService`, then creates or updates the incident through `FirestoreService`. Snapshot streams return mapped `Incident` objects to the provider and listening screens.
+The incident form validates its title, description, category, and location before calling IncidentProvider. The provider delegates the operation to IncidentRepository. If a photograph is attached, StorageService uploads it to Firebase Storage. The repository then writes the report metadata to Cloud Firestore through FirestoreService. Firestore snapshot streams are mapped to Incident objects and delivered to the listening screens.
 
-## 4. Firebase data structure
+### 3.3 Architecture diagram
 
-### User profile: `users/{uid}`
+The editable architecture diagram is stored at docs/architecture/architecture_diagram.mmd. It shows the relationship between Flutter screens, Provider, repositories, Firebase services, and the backend data products.
+
+## 4. Firebase data design
+
+### 4.1 User profile: users/{uid}
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `uid` | string | Firebase Authentication user ID |
-| `name` | string | User's display name |
-| `email` | string | ALU student email |
-| `role` | string | `student` by default; `staff` by trusted administrator assignment |
-| `emailVerified` | boolean | Profile metadata; Firebase Auth token is authoritative for access |
-| `createdAt` | timestamp | Server creation time |
+| uid | string | Firebase Authentication user ID |
+| name | string | Display name |
+| email | string | ALU student email |
+| role | string | student by default; staff by trusted administrator assignment |
+| emailVerified | boolean | Profile metadata; the Firebase Auth token is authoritative for access |
+| createdAt | timestamp | Server creation time |
 
-### Incident: `incidents/{incidentId}`
+### 4.2 Incident: incidents/{incidentId}
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `title` | string | Short summary |
-| `description` | string | Details of the issue |
-| `category` | string | Facilities, Water, Electricity, Safety, or Sanitation |
-| `location` | string | Campus location |
-| `reportedBy` | string | Creator UID |
-| `reporterName` | string | Creator display name at submission |
-| `status` | string | Submitted, In Progress, or Resolved |
-| `createdAt` | timestamp | Server creation time |
-| `updatedAt` | timestamp | Last update time |
-| `imageUrl` | string or null | Optional uploaded image URL |
-| `photoUrls` | string array | Image URL list for compatibility/future extension |
-| `assignedTo` | string or null | Optional staff assignment |
+| title | string | Short issue summary; maximum 100 characters |
+| description | string | Issue details; maximum 1,000 characters |
+| category | string | Facilities, Water, Electricity, Safety, or Sanitation |
+| location | string | Campus location; maximum 160 characters |
+| reportedBy | string | Creator UID |
+| reporterName | string | Creator's display name at submission |
+| status | string | Submitted, In Progress, or Resolved |
+| createdAt | timestamp | Creation time |
+| updatedAt | timestamp | Last update time |
+| imageUrl | string or null | Optional uploaded image URL |
+| photoUrls | string array | Image URL list for compatibility and future extension |
+| assignedTo | string or null | Optional staff assignment |
 
-The model reads both the current `imageUrl` value and earlier documents that store the first photo in `photoUrls`.
+The incident model supports imageUrl and older records containing a photoUrls array. A composite Firestore index supports the student query that filters on reportedBy and sorts by createdAt descending.
 
-## 5. Authentication and authorization
+## 5. Authentication, roles, and security
 
-Registration validates the ALU student email domain and creates a Firebase Authentication account. The user profile is created with the `student` role, and a verification email is sent. Login reloads the Firebase user and rejects an account that has not verified its email. The application restores authentication state from Firebase and provides a verification screen with resend and re-check actions.
+Firebase Authentication is used for email/password registration and sign-in [3]. Registration validates the ALU email domain, creates the account with a student role, and sends a verification message. The login workflow refreshes the Firebase user and rejects accounts whose email is not verified.
 
-The router sends signed-out users to Login, unverified accounts to the verification screen, and verified staff accounts to the staff dashboard. This improves the user experience but is not the security boundary.
+The router directs signed-out users to Login, unverified users to email verification, and verified staff users to the staff dashboard. These route guards improve navigation, but they are not the security boundary. Firestore and Storage security rules enforce authorization on backend requests [5], [6].
 
-The Firestore rules enforce:
+### 5.1 Firestore authorization
 
-- A valid ALU email domain and verified email for incident operations.
-- Student reads only for documents where `reportedBy` equals the signed-in UID.
-- Staff reads across the incident collection when the user's Firestore profile has the trusted `staff` role.
-- Student creation with their own UID and initial `Submitted` status.
-- Student content edits without changing ownership, creation time, or status.
-- Staff updates limited to status, assignment, and update timestamp.
-- No self-service role promotion.
+The rules enforce the following behavior:
 
-Storage rules scope files to `incident_photos/{uid}/{fileName}`, validate image content type and an 8 MB size limit, and restrict access to the owner or authorized staff.
+- Incident operations require a verified @alustudent.com account.
+- Students can read only incidents whose reportedBy value matches their UID.
+- Staff can read the incident queue when the trusted profile has the staff role.
+- Students can create reports only for themselves and only with initial status Submitted.
+- The backend validates required report content, permitted categories, and the same text length limits used by the form.
+- Students can edit their own report content only while the stored status is still Submitted. They cannot change ownership, creation time, or status.
+- Staff updates are restricted to status, assignment, and update timestamp.
+- Users cannot change their own role.
 
-A project administrator must deploy the rules and indexes using the Firebase CLI. Rules in source control are not active until deployed to the correct Firebase project.
+### 5.2 Storage authorization
+
+Incident photographs are stored under incident_photos/{uid}/{fileName}. The rules restrict upload and update to the signed-in owner, require supported image content types, and enforce a file size below 8 MB. The owner and authorized staff can read the image. Storage rules are separate from the Flutter interface and must be deployed to the intended Firebase project.
+
+### 5.3 Administrative setup
+
+A Firebase administrator must deploy the checked-in rules and indexes to the correct project. The administrator must also assign the staff role to a separate test account. A role value in a local mock or an interface setting is not evidence of backend authorization.
 
 ## 6. State management
 
-`AuthProvider` exposes the current Firebase user, application profile, loading state, and authentication initialization state. It listens to Firebase Authentication state changes and notifies the router and screens.
+The project uses Provider with ChangeNotifier, a supported approach for exposing application state to Flutter widgets [7].
 
-`IncidentProvider` manages a Firestore stream subscription for the current student's reports or the staff incident queue. It cancels the previous subscription when switching datasets and when disposed. The provider exposes loading and error states as well as the latest incident list.
+- AuthProvider exposes the Firebase user, application profile, loading state, and authentication initialization state. It listens for authentication changes.
+- IncidentProvider manages a Firestore stream subscription for the current student's reports or the staff incident queue. It exposes the current list, loading state, and error state, and cancels the previous subscription when switching streams or disposing.
+- ThemeProvider exposes the current light/dark appearance for the active app session.
 
-`ThemeProvider` manages the current light/dark appearance selection for the running app session.
+The separation between screen widgets and repositories keeps the Firebase query and persistence details outside the UI layer.
 
-## 7. User interface and usability
+## 7. UI/UX decisions
 
-The interface is organized around a small number of tasks: authenticate, submit a report, find an existing report, inspect its details, and manage its status. Input validation is applied to required fields. Photo upload is optional so a report can still be submitted when an image is unavailable. Search covers title, description, category, and location; status filters support follow-up.
+The interface focuses on the main user journey: authenticate, report an incident, find a report, inspect its details, and follow its status. The home screen presents a prominent reporting action, a summary of the user's report statuses, and recent reports. The report form uses category selection, required text fields, a campus location, and an optional image picker. Report cards make the title, location, creation date, and status visible. The details screen presents the description, attached image when available, and status progress.
 
-**Screenshots to add after running the app:**
+The form and backend use matching length constraints: 100 characters for the title, 1,000 for the description, and 160 for the location. This reduces avoidable rejected writes and protects the data model from oversized input.
 
-| Evidence | File to add |
+**Insert genuine screenshots from the configured Android application before exporting the final PDF.**
+
+| Evidence | Suggested file |
 | --- | --- |
-| Login screen | `docs/screenshots/login.png` |
-| Registration screen | `docs/screenshots/register.png` |
-| Email verification screen | `docs/screenshots/verify_email.png` |
-| Home dashboard | `docs/screenshots/home.png` |
-| New incident form with photo selected | `docs/screenshots/create_incident.png` |
-| Student incident list and filters | `docs/screenshots/my_incidents.png` |
-| Incident details | `docs/screenshots/incident_details.png` |
-| Staff incident queue | `docs/screenshots/staff_dashboard.png` |
-| Staff status management | `docs/screenshots/manage_incident.png` |
-| Firestore/Storage evidence with private values obscured | `docs/screenshots/firebase_records.png` |
+| Login screen | docs/screenshots/login.png |
+| Registration screen | docs/screenshots/register.png |
+| Email verification screen | docs/screenshots/verify_email.png |
+| Home dashboard | docs/screenshots/home.png |
+| Incident form and selected image | docs/screenshots/create_incident.png |
+| Student report list and filters | docs/screenshots/my_incidents.png |
+| Incident details and status progress | docs/screenshots/incident_details.png |
+| Staff incident queue | docs/screenshots/staff_dashboard.png |
+| Staff status update | docs/screenshots/manage_incident.png |
+| Firebase Authentication, Firestore, and Storage records | docs/screenshots/firebase_records.png |
 
-Only include images from the actual running application and your own Firebase project. Obscure email addresses, user IDs, and any personal or sensitive information.
+Use images from the real app and the student's Firebase project only. Hide email addresses, UIDs, credentials, and private project information.
 
-## 8. Testing and verification
+## 8. Testing strategy and evidence
 
-Run the following commands from the repository root after generating Android scaffolding and Firebase configuration:
+The repository contains unit and widget tests for incident model mapping, validation, Provider stream behavior using a fake repository, and incident-card rendering. An integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
 
-```bash
-flutter pub get
-dart format lib test integration_test
-flutter analyze
-flutter test
-flutter build apk --debug
-```
+Run these commands from the project root after Android and Firebase configuration:
 
-The unit and widget tests cover model mapping, input validation, provider stream handling with a fake repository, and incident-card rendering. The device integration smoke test requires a configured Firebase project and an Android device/emulator.
+    flutter pub get
+    dart format lib test integration_test
+    flutter analyze
+    flutter test
+    flutter build apk --debug
 
-**Actual verification record — complete after running locally:**
+### 8.1 Verification record
 
-| Check | Result | Environment / notes |
+The table below must be completed with actual results from the student's computer. A repository file or planned test is not proof that a command has passed.
+
+| Check | Current evidence status | Student action |
 | --- | --- | --- |
-| `flutter pub get` | Not yet recorded | Add date and Flutter version |
-| `dart format` | Not yet recorded | Add any formatting changes |
-| `flutter analyze` | Not yet recorded | Paste actual result |
-| `flutter test` | Not yet recorded | Paste actual test count |
-| `flutter build apk --debug` | Not yet recorded | Add Android SDK/device details |
-| Firebase student workflow | Not yet recorded | Test with verified ALU account |
-| Firebase staff workflow | Not yet recorded | Test with admin-assigned staff account |
+| Dependency installation | Not verified in this review | Run flutter pub get |
+| Dart formatting | Not verified in this review | Run formatter and inspect the diff |
+| Static analysis | Latest GitHub Actions run on the default branch was marked failed | Inspect workflow failure and rerun after fixes |
+| Unit/widget tests | Not verified in this review | Run flutter test and record the result |
+| Android debug build | Blocked until native Android runner files are generated | Run flutter create --platforms=android ., then build |
+| Firebase student workflow | Not verified against a live Firebase project | Register, verify, sign in, and submit a test report |
+| Photo upload | Not verified against a live Storage bucket | Upload and display a real test photo |
+| Staff workflow | Not verified against a staff account | Assign a staff role using Firebase administration and update a report |
+| Screenshots and video | Not yet present in the repository | Capture genuine evidence and record the 7–10 minute demo |
 
-Do not replace these entries with a passing result until the command or workflow has actually completed.
+### 8.2 Test limitations
 
-## 9. Known setup dependencies and limitations
+The current automated tests do not replace backend security testing. Additional tests should use the Firebase Emulator Suite to verify that a student cannot read or edit another student's report, cannot change a report status, and cannot promote themselves to staff. Storage emulator tests should check ownership, content type, and file size.
 
-- The generated Firebase configuration is project-specific. `lib/firebase_options.dart` remains a fail-fast setup placeholder until `flutterfire configure --platforms=android` is run.
-- The Android runner files must be generated using the local Flutter SDK because the Android directory currently contains setup guidance only.
-- The staff role must be assigned by an administrator in Firebase Console or through a trusted Admin SDK process.
-- Search and status filtering are performed on the currently loaded list. Large deployments may need server-side pagination and additional composite indexes.
-- The current implementation supports an optional incident photo. It does not include push notifications, offline report submission, or a production staff-assignment workflow.
-- The appearance preference currently applies for the active app session; it is not persisted between restarts.
+## 9. Challenges and design trade-offs
 
-## 10. Lessons and next improvements
+The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The native Android runner also needs to be generated with the installed Flutter SDK.
 
-The architecture keeps Firebase operations outside the presentation widgets and centralizes access control in Firebase rules. The most important next improvements are automated Firestore/Storage emulator security tests, pagination for large incident queues, notification of status changes, and an administrator-managed staff assignment workflow.
+The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. The theme preference currently lasts for the active app session rather than being stored across restarts. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
-## 11. Demo video
+## 10. Lessons learned and future work
 
-**Video link:** Add the accessible link after recording the real 7–10 minute Android demonstration.
+The project demonstrates why client-side navigation checks and backend authorization must be treated separately. Provider stream subscriptions help keep screens in sync with Firestore changes, while repositories and service classes isolate persistence from presentation. Form validation should match backend constraints so that accepted UI input is also accepted by Firestore rules.
 
-Use [the demo script](demo_script.md) to show both student and staff workflows. The video should be recorded after Firebase configuration, rule deployment, and local verification.
+Future improvements include Firebase Emulator security tests, paginated incident feeds, notification when report status changes, persistent appearance preferences, and a trusted staff assignment interface.
+
+## 11. Demonstration video
+
+**Video URL:** Add the accessible URL for the genuine 7–10 minute Android demonstration before submission.
+
+The recording must show student registration and verification, login, incident creation with an optional photo, browsing/search/filtering, report details, and a separate authorized staff account updating a report status. It should also show relevant Firebase Console records and explain the architecture. Use docs/demo_script.md. Do not show passwords, private keys, or personal information.
 
 ## References
 
-- Flutter documentation: https://docs.flutter.dev/
-- Firebase for Flutter: https://firebase.google.com/docs/flutter/setup
-- Firebase Authentication: https://firebase.google.com/docs/auth/flutter/start
-- Cloud Firestore: https://firebase.google.com/docs/firestore
-- Firestore security rules: https://firebase.google.com/docs/firestore/security/get-started
-- Cloud Storage security rules: https://firebase.google.com/docs/storage/security
-- Provider package: https://pub.dev/packages/provider
-- go_router package: https://pub.dev/packages/go_router
+[1] Google, “Flutter documentation.” [Online]. Available: https://docs.flutter.dev/. [Accessed: Nov. 7, 2026].
+
+[2] Google, “Add Firebase to your Flutter app.” [Online]. Available: https://firebase.google.com/docs/flutter/setup. [Accessed: Nov. 7, 2026].
+
+[3] Google, “Get started with Firebase Authentication on Flutter.” [Online]. Available: https://firebase.google.com/docs/auth/flutter/start. [Accessed: Nov. 7, 2026].
+
+[4] Google, “Cloud Firestore documentation.” [Online]. Available: https://firebase.google.com/docs/firestore. [Accessed: Nov. 7, 2026].
+
+[5] Google, “Get started with Cloud Firestore Security Rules.” [Online]. Available: https://firebase.google.com/docs/firestore/security/get-started. [Accessed: Nov. 7, 2026].
+
+[6] Google, “Get started with Cloud Storage Security Rules.” [Online]. Available: https://firebase.google.com/docs/storage/security. [Accessed: Nov. 7, 2026].
+
+[7] “provider: A wrapper around InheritedWidget to make them easier to use and more reusable,” pub.dev. [Online]. Available: https://pub.dev/packages/provider. [Accessed: Nov. 7, 2026].
+
+[8] “go_router: A declarative router for Flutter,” pub.dev. [Online]. Available: https://pub.dev/packages/go_router. [Accessed: Nov. 7, 2026].

@@ -66,3 +66,8 @@ Firestore rules are not query filters. Student queries must include the ownershi
 - Add Firebase Emulator Suite security tests before production use.
 
 Never commit Firebase Admin SDK credentials, service-account JSON, or private keys into this folder or Flutter client code.
+
+
+## Validation enforced by the current rules
+
+Incident titles are limited to 100 characters, descriptions to 1,000 characters, locations to 160 characters, and categories to Facilities, Water, Electricity, Safety, or Sanitation. These checks run in Firestore rules as well as in the Flutter form. A student can edit report content only while the stored status is still Submitted; changing the client UI or calling Firestore directly does not bypass this backend condition.

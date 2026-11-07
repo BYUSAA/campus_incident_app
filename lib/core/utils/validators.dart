@@ -25,4 +25,27 @@ class Validators {
     }
     return null;
   }
+
+  static String? validateTitle(String? value) =>
+      _validateBoundedText(value, 'Title', 100);
+
+  static String? validateDescription(String? value) =>
+      _validateBoundedText(value, 'Description', 1000);
+
+  static String? validateLocation(String? value) =>
+      _validateBoundedText(value, 'Location', 160);
+
+  static String? _validateBoundedText(
+    String? value,
+    String fieldName,
+    int maximumLength,
+  ) {
+    final requiredError = validateRequired(value, fieldName);
+    if (requiredError != null) return requiredError;
+
+    if (value!.trim().length > maximumLength) {
+      return '$fieldName must be $maximumLength characters or fewer';
+    }
+    return null;
+  }
 }

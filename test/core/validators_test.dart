@@ -19,7 +19,32 @@ void main() {
     });
 
     test('rejects a short password', () {
-      expect(Validators.validatePassword('123'), 'Password must be at least 6 characters');
+      expect(
+        Validators.validatePassword('123'),
+        'Password must be at least 6 characters',
+      );
+    });
+
+    test('accepts incident field values within the limits', () {
+      expect(Validators.validateTitle('Broken classroom projector'), isNull);
+      expect(Validators.validateDescription('A detailed report.'), isNull);
+      expect(Validators.validateLocation('Block B, Room 204'), isNull);
+    });
+
+    test('rejects incident field values longer than backend limits', () {
+      final overlongTitle = List<String>.filled(101, 't').join();
+      final overlongDescription = List<String>.filled(1001, 'd').join();
+      final overlongLocation = List<String>.filled(161, 'l').join();
+
+      expect(Validators.validateTitle(overlongTitle), contains('100 characters'));
+      expect(
+        Validators.validateDescription(overlongDescription),
+        contains('1000 characters'),
+      );
+      expect(
+        Validators.validateLocation(overlongLocation),
+        contains('160 characters'),
+      );
     });
   });
 }
