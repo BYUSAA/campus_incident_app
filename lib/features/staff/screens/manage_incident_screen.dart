@@ -78,9 +78,34 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
     }
   }
 
+  int _statusRank(String status) {
+    switch (status) {
+      case 'In Progress':
+        return 1;
+      case 'Resolved':
+        return 2;
+      case 'Submitted':
+      default:
+        return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final incident = widget.incident;
+    final incidentState = context.watch<IncidentProvider>();
+    Incident? latestIncident;
+    for (final candidate in incidentState.incidents) {
+      if (candidate.id == widget.incident.id) {
+        latestIncident = candidate;
+        break;
+      }
+    }
+    final incident = latestIncident ?? widget.incident;
+    // Status transitions are forward-only, so the furthest status from the
+    // latest Firestore snapshot or this screen's optimistic update wins.
+    final currentStatus = _statusRank(incident.status) >= _statusRank(_currentStatus)
+        ? incident.status
+        : _currentStatus;
     final imageUrl = incident.imageUrl ??
         (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
     final isBusy = _isUpdating || _isDeleting;
@@ -153,7 +178,7 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
             ),
             const SizedBox(height: 12),
             StatusUpdateControl(
-              currentStatus: _currentStatus,
+              currentStatus: currentStatus,
               enabled: !isBusy,
               onStatusChanged: _updateStatus,
             ),
