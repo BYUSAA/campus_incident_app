@@ -73,128 +73,22 @@ try {
         }
 
         # Firebase FlutterFire 5.x uses Firebase Android SDK 35 and requires
-        # Android API 24 or newer. Pin the generated app's minimum explicitly
-        # instead of inheriting a potentially older Flutter template default.
-        $updatedGradleContent = [regex]::Replace(
-            $gradleContent,
-            '(?m)^(\s*minSdk\s*=\s*)flutter\.minSdkVersion\s*
+        # Android API 24 or newer. Pin the generated app minimum explicitly.
+        $updatedGradleContent = $gradleContent -replace '(?m)^\s*minSdk\s*=\s*flutter\.minSdkVersion\s*$', 'minSdk = 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdkVersion\s+flutter\.minSdkVersion\s*$', 'minSdkVersion 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdk\s*=\s*2[1-3]\s*$', 'minSdk = 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdkVersion\s+2[1-3]\s*$', 'minSdkVersion 24'
 
-    Write-Host 'Installing Flutter dependencies...' -ForegroundColor Cyan
-    flutter pub get
-    if ($LASTEXITCODE -ne 0) {
-        throw 'flutter pub get failed. Review the dependency error above.'
-    }
-
-    Write-Host ''
-    Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
-    Write-Host ''
-    Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
-    Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'
-}
-finally {
-    Pop-Location
-}
-,
-            '$1 24'
-        )
-        $updatedGradleContent = [regex]::Replace(
-            $updatedGradleContent,
-            '(?m)^(\s*minSdkVersion\s+)flutter\.minSdkVersion\s*
-
-    Write-Host 'Installing Flutter dependencies...' -ForegroundColor Cyan
-    flutter pub get
-    if ($LASTEXITCODE -ne 0) {
-        throw 'flutter pub get failed. Review the dependency error above.'
-    }
-
-    Write-Host ''
-    Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
-    Write-Host ''
-    Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
-    Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'
-}
-finally {
-    Pop-Location
-}
-,
-            '$1 24'
-        )
         if ($updatedGradleContent -ne $gradleContent) {
             Set-Content -Path $gradleFile -Value $updatedGradleContent -Encoding utf8
             $gradleContent = $updatedGradleContent
         }
 
         $minimumSdk = $null
-        if ($gradleContent -match '(?m)^\s*minSdk\s*=\s*(\d+)\s*
-
-    Write-Host 'Installing Flutter dependencies...' -ForegroundColor Cyan
-    flutter pub get
-    if ($LASTEXITCODE -ne 0) {
-        throw 'flutter pub get failed. Review the dependency error above.'
-    }
-
-    Write-Host ''
-    Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
-    Write-Host ''
-    Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
-    Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'
-}
-finally {
-    Pop-Location
-}
-) {
+        if ($gradleContent -match '(?m)^\s*minSdk\s*=\s*(\d+)\s*$') {
             $minimumSdk = [int]$Matches[1]
         }
-        elseif ($gradleContent -match '(?m)^\s*minSdkVersion\s+(\d+)\s*
-
-    Write-Host 'Installing Flutter dependencies...' -ForegroundColor Cyan
-    flutter pub get
-    if ($LASTEXITCODE -ne 0) {
-        throw 'flutter pub get failed. Review the dependency error above.'
-    }
-
-    Write-Host ''
-    Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
-    Write-Host ''
-    Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
-    Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'
-}
-finally {
-    Pop-Location
-}
-) {
+        elseif ($gradleContent -match '(?m)^\s*minSdkVersion\s+(\d+)\s*$') {
             $minimumSdk = [int]$Matches[1]
         }
 
@@ -216,14 +110,9 @@ finally {
 
     Write-Host ''
     Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
+    Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
+    Write-Host 'Register this exact application ID in Firebase Console.'
+    Write-Host 'Android minimum SDK: 24'
     Write-Host ''
     Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
     Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'
