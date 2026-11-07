@@ -140,7 +140,17 @@ void main() {
       provider.dispose();
     });
 
-    test('forwards photo removal during report editing', () async {\n      final repository = FakeIncidentRepository();\n      final provider = IncidentProvider(repository: repository);\n\n      await provider.updateIncident(repository.sample, removePhoto: true);\n\n      expect(repository.lastRemovePhoto, isTrue);\n      provider.dispose();\n    });\n\n    test('forwards status updates and report deletion', () async {
+    test('forwards photo removal during report editing', () async {
+      final repository = FakeIncidentRepository();
+      final provider = IncidentProvider(repository: repository);
+
+      await provider.updateIncident(repository.sample, removePhoto: true);
+
+      expect(repository.lastRemovePhoto, isTrue);
+      provider.dispose();
+    });
+
+    test('forwards status updates and report deletion', () async {
       final repository = FakeIncidentRepository();
       final provider = IncidentProvider(repository: repository);
 
