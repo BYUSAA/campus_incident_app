@@ -22,7 +22,7 @@ The script:
 - Installs Flutter dependencies.
 - Prints the generated Android application ID.
 
-For the current package name, the expected application ID is `com.byusa.campus_incident_reporter`. The Android minimum SDK is set to API 24 because `image_picker` 1.2.4 supports Android API 24 and newer. Confirm the actual value in `android/app/build.gradle.kts` and register that exact ID in Firebase Console.
+For the current package name, the expected application ID is `com.byusa.campus_incident_reporter`. The Android minimum SDK is set to API 24 because `image_picker` 1.2.4 supports Android API 24 and newer. FlutterFire dependencies are pinned as the coordinated BoM 5.1.0 set. Confirm the actual value in `android/app/build.gradle.kts` and register that exact ID in Firebase Console.
 
 Direct commands:
 
