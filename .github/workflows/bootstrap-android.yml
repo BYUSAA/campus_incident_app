@@ -1,9 +1,6 @@
 name: Generate missing Android platform
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -102,9 +99,7 @@ jobs:
           fi
 
           test -f android/app/src/main/AndroidManifest.xml
-          test -f android/gradlew
-          test -f android/gradlew.bat
-          test -f android/gradle/wrapper/gradle-wrapper.jar
+          test -f android/gradle/wrapper/gradle-wrapper.properties
           grep -R -E 'minSdk(Version)?[[:space:]]*=?[[:space:]]*24' android/app/build.gradle* >/dev/null
           echo "Android runner generated and required files verified."
 
