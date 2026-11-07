@@ -44,21 +44,9 @@ jobs:
           dart --version
           java -version
 
-      - name: Generate Android runner for CI build
-        shell: bash
-        run: |
-          if [ -d android ] && [ ! -f android/app/src/main/AndroidManifest.xml ]; then
-            mkdir -p "$RUNNER_TEMP/campus-android-docs"
-            cp -a android/. "$RUNNER_TEMP/campus-android-docs/"
-            rm -rf android
-            flutter create --platforms=android --org com.byusa .
-            cp -a "$RUNNER_TEMP/campus-android-docs/." android/
-          else
-            flutter create --platforms=android --org com.byusa .
-          fi
-
-      - name: Install Flutter dependencies
-        run: flutter pub get
+      - name: Generate and validate Android runner
+        shell: pwsh
+        run: ./tooling/bootstrap-android.ps1
 
       - name: Format Dart sources
         run: dart format lib test integration_test
