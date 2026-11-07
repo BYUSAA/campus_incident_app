@@ -22,16 +22,6 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
   String _statusFilter = 'All';
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final user = context.read<AuthProvider>().user;
-      if (user != null) context.read<IncidentProvider>().watchForUser(user);
-    });
-  }
-
-  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
