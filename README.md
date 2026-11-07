@@ -251,7 +251,8 @@ Never add a client-side self-promotion switch or commit administrator credential
 
 ## Assignment submission
 
-The assignment requires a **PDF technical report** and a **7–10 minute demonstration video**. Use:
+The repository includes an **IEEE-style technical report PDF draft** and an editable Markdown source. The PDF records the architecture, data model, state management, roles, security, UI/UX, testing strategy, lessons learned, and references; its evidence-status table is deliberately honest about unverified live Firebase/device checks. Use:
+- [Technical report PDF draft](docs/Byusa_Martin_De_Poles_Assignment2.pdf)
 - [Technical report draft](docs/technical_report.md)
 - [Demo script](docs/demo_script.md)
 - [55-point rubric checklist](docs/submission_checklist.md)
