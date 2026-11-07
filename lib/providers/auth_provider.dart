@@ -137,7 +137,7 @@ class AuthProvider extends ChangeNotifier {
     return verified;
   }
 
-  Future<void> resendVerification() => _repository.resendVerification();
+  Future<void> resendVerification() => _repository.resendVerification();\n\n  Future<void> sendPasswordResetEmail(String email) =>\n      _repository.sendPasswordResetEmail(email);
 
   Future<void> logout() async {
     await _repository.logout();
