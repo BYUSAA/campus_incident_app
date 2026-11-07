@@ -12,7 +12,7 @@ class AppTheme {
         primary: AppConstants.primaryColor,
         surface: Colors.white,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: const AppBarThemeData(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -34,7 +34,7 @@ class AppTheme {
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -54,7 +54,7 @@ class AppTheme {
         brightness: Brightness.dark,
       ),
       appBarTheme: const AppBarTheme(centerTitle: true),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: const Color(0xFF252525),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
