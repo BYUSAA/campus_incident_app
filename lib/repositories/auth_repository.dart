@@ -77,7 +77,11 @@ class AuthRepository {
   }
 
   Future<AppUser?> login(String email, String password) async {
-    await _auth.login(email, password);
+    final normalizedEmail = email.trim().toLowerCase();
+    final emailError = Validators.validateEmail(normalizedEmail);
+    if (emailError != null) throw ArgumentError(emailError);
+
+    await _auth.login(normalizedEmail, password);
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) {
       throw StateError(
@@ -93,6 +97,9 @@ class AuthRepository {
         'Verify your ALU email address before signing in.',
       );
     }
+
+    // Refresh the token so rules receive the current verified-email claim.
+    await refreshedUser.getIdToken(true);
 
     final profile = await loadProfile(refreshedUser.uid);
     if (profile == null) {
