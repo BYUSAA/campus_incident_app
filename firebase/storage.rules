@@ -11,20 +11,27 @@ service firebase.storage {
 
     function staff() {
       return verifiedAlu()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'staff';
     }
 
+    function canReadOrDelete(uid) {
+      return verifiedAlu() && (request.auth.uid == uid || staff());
+    }
+
     match /incident_photos/{uid}/{fileName} {
-      // Report owners and staff can view uploaded evidence.
-      allow read: if verifiedAlu()
-        && (request.auth.uid == uid || staff());
+      allow read: if canReadOrDelete(uid);
 
       allow create, update: if verifiedAlu()
         && request.auth.uid == uid
+        && request.resource.size > 0
         && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType is string
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
 
-      allow delete: if verifiedAlu() && request.auth.uid == uid;
+      // Staff need delete permission so they can moderate a report and clean
+      // up its photo after deleting its Firestore document.
+      allow delete: if canReadOrDelete(uid);
     }
   }
 }
