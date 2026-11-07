@@ -13,7 +13,10 @@ class IncidentDetailsScreen extends StatelessWidget {
 
   final Incident incident;
 
-  Future<void> _deleteIncident(BuildContext context) async {
+  Future<void> _deleteIncident(
+    BuildContext context,
+    Incident currentIncident,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -31,7 +34,7 @@ class IncidentDetailsScreen extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await context.read<IncidentProvider>().deleteIncident(incident.id);
+      await context.read<IncidentProvider>().deleteIncident(currentIncident.id);
       if (context.mounted) context.pop();
     } catch (error) {
       if (context.mounted) {
@@ -44,10 +47,14 @@ class IncidentDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final liveIncident =
+        context.watch<IncidentProvider>().findById(incident.id) ?? incident;
     final user = context.watch<AuthProvider>().user;
-    final canEdit = user != null && user.uid == incident.reportedBy && incident.status == 'Submitted';
-    final imageUrl = incident.imageUrl ??
-        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+    final canEdit = user != null &&
+        user.uid == liveIncident.reportedBy &&
+        liveIncident.status == 'Submitted';
+    final imageUrl = liveIncident.imageUrl ??
+        (liveIncident.photoUrls.isEmpty ? null : liveIncident.photoUrls.first);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,9 +64,9 @@ class IncidentDetailsScreen extends StatelessWidget {
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') {
-                  context.push('/edit-incident', extra: incident);
+                  context.push('/edit-incident', extra: liveIncident);
                 } else if (value == 'delete') {
-                  _deleteIncident(context);
+                  _deleteIncident(context, liveIncident);
                 }
               },
               itemBuilder: (context) => const [
@@ -88,30 +95,30 @@ class IncidentDetailsScreen extends StatelessWidget {
             else
               _imagePlaceholder(),
             const SizedBox(height: 20),
-            Text(incident.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(liveIncident.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Chip(label: Text(incident.category)),
-                _statusBadge(incident.status),
+                Chip(label: Text(liveIncident.category)),
+                _statusBadge(liveIncident.status),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              'Submitted on ${DateFormat('MMM d, yyyy • h:mm a').format(incident.createdAt)}',
+              'Submitted on ${DateFormat('MMM d, yyyy • h:mm a').format(liveIncident.createdAt)}',
               style: const TextStyle(color: AppConstants.greyText, fontSize: 12),
             ),
-            if (incident.reporterName?.isNotEmpty == true) ...[
+            if (liveIncident.reporterName?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
-              Text('Reported by ${incident.reporterName}'),
+              Text('Reported by ${liveIncident.reporterName}'),
             ],
             const Divider(height: 32),
             const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text(incident.description, style: const TextStyle(height: 1.5)),
+            Text(liveIncident.description, style: const TextStyle(height: 1.5)),
             const SizedBox(height: 24),
             const Text('Location', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -119,7 +126,7 @@ class IncidentDetailsScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on_outlined, size: 18, color: AppConstants.greyText),
                 const SizedBox(width: 6),
-                Expanded(child: Text(incident.location)),
+                Expanded(child: Text(liveIncident.location)),
               ],
             ),
             const SizedBox(height: 24),
@@ -164,9 +171,9 @@ class IncidentDetailsScreen extends StatelessWidget {
   }
 
   Widget _timeline() {
-    final currentStep = incident.status == 'Resolved'
+    final currentStep = liveIncident.status == 'Resolved'
         ? 2
-        : incident.status == 'In Progress'
+        : liveIncident.status == 'In Progress'
             ? 1
             : 0;
     const steps = ['Submitted', 'In Progress', 'Resolved'];
