@@ -28,9 +28,18 @@ try {
     }
 
     Write-Host 'Checking Firebase account access...' -ForegroundColor Cyan
-    firebase login:list
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Firebase CLI login check failed. Run firebase login and retry.'
+    $loginOutput = firebase login:list 2>&1
+    $loginText = $loginOutput -join "`n"
+    if ($LASTEXITCODE -ne 0 -or $loginText -match 'No authorized accounts') {
+        Write-Host 'No Firebase CLI account is signed in. Starting Firebase login...' -ForegroundColor Yellow
+        firebase login
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Firebase login did not complete successfully.'
+        }
+        firebase login:list
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Firebase CLI could not verify the signed-in account.'
+        }
     }
 
     # Use explicit --project arguments throughout so the script does not
