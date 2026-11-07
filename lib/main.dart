@@ -30,9 +30,9 @@ Future<void> main() async {
           update: (_, auth, incidents) {
             final provider = incidents ?? IncidentProvider();
             if (auth.isInitialized && auth.isAuthenticated) {
-              provider.watchForUser(auth.user);
+              provider.watchForUser(auth.user, notify: false);
             } else {
-              provider.clear();
+              provider.clear(notify: false);
             }
             return provider;
           },
