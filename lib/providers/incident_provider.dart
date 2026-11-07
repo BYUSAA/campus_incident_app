@@ -79,8 +79,16 @@ class IncidentProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> updateIncident(Incident incident, {File? photo}) {
-    return _repository.update(incident, photo: photo);
+  Future<void> updateIncident(
+    Incident incident, {
+    File? photo,
+    bool removePhoto = false,
+  }) {
+    return _repository.update(
+      incident,
+      photo: photo,
+      removePhoto: removePhoto,
+    );
   }
 
   Future<void> deleteIncident(String id) => _repository.delete(id);
