@@ -36,13 +36,22 @@ class _IncidentFormState extends State<IncidentForm> {
   bool _removeExistingPhoto = false;
   bool _isLoading = false;
 
+  String? get _existingImageUrl {
+    final incident = widget.initialIncident;
+    if (incident == null || _removeExistingPhoto) return null;
+    return incident.imageUrl ??
+        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+  }
+
   @override
   void initState() {
     super.initState();
     final initial = widget.initialIncident;
     _titleController = TextEditingController(text: initial?.title ?? '');
-    _descriptionController = TextEditingController(text: initial?.description ?? '');
-    _locationController = TextEditingController(text: initial?.location ?? '');
+    _descriptionController =
+        TextEditingController(text: initial?.description ?? '');
+    _locationController =
+        TextEditingController(text: initial?.location ?? '');
     _selectedCategory = initial?.category ?? 'Facilities';
   }
 
@@ -59,7 +68,9 @@ class _IncidentFormState extends State<IncidentForm> {
     final user = context.read<AuthProvider>().user;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in again before submitting.')),
+        const SnackBar(
+          content: Text('Please sign in again before submitting.'),
+        ),
       );
       return;
     }
@@ -87,9 +98,12 @@ class _IncidentFormState extends State<IncidentForm> {
           description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
-          reporterName: user.name,
         );
-        await provider.updateIncident(\n          updated,\n          photo: _selectedPhoto,\n          removePhoto: _removeExistingPhoto,\n        );
+        await provider.updateIncident(
+          updated,
+          photo: _selectedPhoto,
+          removePhoto: _removeExistingPhoto,
+        );
       }
 
       if (mounted) widget.onSuccess();
@@ -178,15 +192,13 @@ class _IncidentFormState extends State<IncidentForm> {
           const SizedBox(height: 12),
           PhotoPicker(
             selectedImage: _selectedPhoto,
-            existingImageUrl: _removeExistingPhoto
-                ? null
-                : widget.initialIncident?.imageUrl ??
-                    (widget.initialIncident?.photoUrls.isNotEmpty == true
-                        ? widget.initialIncident!.photoUrls.first
-                        : null),
-            onImageSelected: (file) => setState(() => _selectedPhoto = file),
-            onExistingImageRemoved: () =>
-                setState(() => _removeExistingPhoto = true),
+            existingImageUrl: _existingImageUrl,
+            onImageSelected: (file) {
+              setState(() => _selectedPhoto = file);
+            },
+            onExistingImageRemoved: () {
+              setState(() => _removeExistingPhoto = true);
+            },
           ),
           const SizedBox(height: 28),
           SizedBox(
