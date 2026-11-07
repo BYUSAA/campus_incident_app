@@ -214,3 +214,10 @@ Firebase options and native Android runner files must be generated locally. Staf
 ## License
 
 See [LICENSE](LICENSE).
+
+
+## Assignment 2 submission evidence
+
+Use [the final submission checklist](docs/submission_checklist.md) to map the 55-point rubric to the evidence Canvas expects. The technical report draft is in [docs/technical_report.md](docs/technical_report.md), and the 7–10 minute recording outline is in [docs/demo_script.md](docs/demo_script.md).
+
+Before the application can be demonstrated on Android, generate the native Android runner and configure the actual Firebase project as described above. The checked-in Firebase options file is intentionally a fail-fast placeholder; the app cannot initialize Firebase until FlutterFire generates the project-specific options. The most recent recorded GitHub Actions run on main failed, so inspect the workflow result and run the checks locally before submission. Add only real screenshots, test outcomes, Firebase evidence, and the recorded demo URL to the final PDF.
