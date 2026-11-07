@@ -81,6 +81,10 @@ void main() {
       expect(updated.imageUrl, isNull);
       expect(updated.photoUrls, isEmpty);
       expect(updated.assignedTo, isNull);
+
+      final clearedByPhotoList = original.copyWith(photoUrls: []);
+      expect(clearedByPhotoList.imageUrl, isNull);
+      expect(clearedByPhotoList.photoUrls, isEmpty);
       expect(updated.reportedBy, original.reportedBy);
       expect(updated.createdAt, original.createdAt);
     });
