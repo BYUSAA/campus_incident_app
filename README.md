@@ -65,7 +65,7 @@ See [the architecture guide](docs/architecture/README.md) and [Mermaid diagram](
 
 ## Requirements
 
-Install Flutter stable, Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
+Install Flutter 3.47.0 or newer (Dart 3.13.0 or newer), Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
 
 ```powershell
 flutter doctor -v
