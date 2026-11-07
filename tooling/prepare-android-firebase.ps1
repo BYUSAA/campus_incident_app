@@ -43,7 +43,7 @@ try {
     }
 
     Write-Host "`n== Firebase project configuration ==" -ForegroundColor Cyan
-    & (Join-Path $PSScriptRoot 'bootstrap-firebase.ps1') -ProjectId $FirebaseProjectId
+    & (Join-Path $PSScriptRoot 'bootstrap-firebase.ps1') -ProjectId $FirebaseProjectId -RequireDeployment
     if ($LASTEXITCODE -ne 0) {
         throw 'Firebase bootstrap failed.'
     }
