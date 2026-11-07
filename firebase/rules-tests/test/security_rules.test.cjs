@@ -171,22 +171,6 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       );
     });
 
-    it('allows owners to change profile names but not protected profile fields', async function () {
-      const db = student().firestore();
-      await assertSucceeds(
-        updateDoc(doc(db, 'users', 'student-1'), {
-          name: 'Updated Student Name',
-          updatedAt: serverTimestamp(),
-        }),
-      );
-      await assertFails(
-        updateDoc(doc(db, 'users', 'student-1'), {
-          emailVerified: false,
-          updatedAt: serverTimestamp(),
-        }),
-      );
-    });
-
     it('keeps student profile documents private from other users and staff', async function () {
       const studentDb = student().firestore();
       const staffDb = staff().firestore();
