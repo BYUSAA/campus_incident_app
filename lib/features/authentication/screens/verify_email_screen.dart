@@ -16,7 +16,19 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   bool _checking = false;
   bool _sending = false;
 
-  Future<void> _signOut() async {\n    try {\n      await context.read<AuthProvider>().logout();\n      if (mounted) context.go('/login');\n    } catch (error) {\n      if (!mounted) return;\n      ScaffoldMessenger.of(context).showSnackBar(\n        SnackBar(content: Text('Could not sign out: $error')),\n      );\n    }\n  }\n\n  Future<void> _checkVerification() async {
+  Future<void> _signOut() async {
+    try {
+      await context.read<AuthProvider>().logout();
+      if (mounted) context.go('/login');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not sign out: $error')),
+      );
+    }
+  }
+
+  Future<void> _checkVerification() async {
     setState(() => _checking = true);
     try {
       final verified = await context.read<AuthProvider>().refreshVerification();
