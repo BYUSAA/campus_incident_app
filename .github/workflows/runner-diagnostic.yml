@@ -1,0 +1,24 @@
+name: GitHub runner allocation diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-2204-runner-check:
+    name: Minimal Ubuntu 22.04 runner check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3
+    steps:
+      - name: Report runner assignment
+        run: |
+          echo "GitHub successfully assigned a hosted runner."
+          echo "Runner: $RUNNER_NAME"
+          echo "OS: $RUNNER_OS"
+          echo "Architecture: $RUNNER_ARCH"
+          uname -a
+          date -u
