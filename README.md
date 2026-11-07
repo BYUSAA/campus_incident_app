@@ -252,7 +252,6 @@ Capture genuine screenshots from your configured Android app and Firebase Consol
 - Android runner files and Firebase options are generated on the developer's computer; they are not fabricated in this repository.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
 - Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
-- Push notifications, offline submission, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
 
 ## License
