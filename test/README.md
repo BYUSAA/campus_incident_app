@@ -1,55 +1,49 @@
-# Unit and widget tests
+# Flutter unit and widget tests
 
-This folder contains automated checks that can run without contacting the live Firebase project.
+These tests run without a live Firebase project.
 
 ## Run the suite
-
-From the repository root:
 
 ```powershell
 flutter pub get
 flutter test
 ```
 
-Run individual files:
-
-```powershell
-flutter test test/models/incident_test.dart
-flutter test test/providers/incident_provider_test.dart
-flutter test test/widgets/incident_card_test.dart
-```
-
-## Current coverage
+## Coverage map
 
 | Test | Coverage |
 | --- | --- |
-| `models/incident_test.dart` | Firestore mapping, safe defaults, timestamp conversion, and legacy image URL compatibility |
-| `core/validators_test.dart` | ALU email validation, required fields, and password length |
-| `providers/incident_provider_test.dart` | Student and staff incident stream handling with a fake repository |
-| `widgets/incident_card_test.dart` | Incident card title and status rendering |
-| `services/incident_repository_test.dart` | Model payload shape used when saving an incident |
+| `core/validators_test.dart` | ALU email format/domain, profile name, password, and bounded report fields |
+| `core/incident_status_test.dart` | Forward-only status progression |
+| `models/incident_test.dart` | Firestore mapping, defaults, timestamp conversion, and image compatibility |
+| `providers/incident_provider_test.dart` | Student/staff feeds, user switching, report submission, status/delete delegation |
+| `widgets/incident_form_test.dart` | Required incident fields are validated before submit |
+| `widgets/incident_card_test.dart` | Incident title and status rendering |
 
-The repository test checks the serialized Firestore payload. It is not a full mocked Firebase repository test.
+These validate client behavior. They do not replace backend Firebase security tests.
 
-## Device integration smoke test
+## Firebase Emulator Suite rules tests
 
-The current device-level smoke test is at `integration_test/app_workflow_test.dart`. It requires generated Firebase options and a configured Android device or emulator:
+The isolated rules tests live in `firebase/rules-tests/` and test Firestore and Storage authorization without a live Firebase project.
 
 ```powershell
+cd firebase/rules-tests
+npm install
+cd ../..
+firebase emulators:exec --project demo-campus-incident-reporter --only firestore,storage "npm --prefix firebase/rules-tests test"
+```
+
+The suite checks student ownership, role self-promotion, verification, report lifecycle, status progression, image folder ownership, MIME type, file size, and staff photo cleanup.
+
+## Android device smoke test
+
+`integration_test/app_workflow_test.dart` requires generated Android files, Firebase options, and an emulator/device:
+
+```powershell
+flutter devices
 flutter test integration_test/app_workflow_test.dart
 ```
 
-It initializes Firebase and checks the signed-out navigation path. It is not yet an end-to-end test of registration, photo upload, student ownership, and staff moderation.
+The current smoke test checks the signed-out navigation path only. Registration, photo upload, student isolation, and staff moderation must still be demonstrated against the configured Firebase project.
 
-## Recommended next tests
-
-- Firestore Emulator rules tests for student ownership and staff access.
-- Storage Emulator tests for UID path restrictions, image MIME types, and the 8 MB limit.
-- Auth tests for verified/unverified and missing-profile accounts.
-- Widget tests for incident form validation, photo picker, and status updates.
-- Full student-to-staff workflow tests using dedicated Firebase test accounts.
-
-Record real command output and the Flutter/Dart version used. Do not mark a test as passing until it has run successfully.
-
-
-The incident form validators also check the Firestore-aligned limits: title (100), description (1,000), and location (160) characters. These are unit tests for client-side validation only; backend rule behavior still needs Firebase Emulator Suite tests or manual verified-project checks.
+Record actual command results and versions in `docs/technical_report.md`. Do not mark an unexecuted test as passing.
