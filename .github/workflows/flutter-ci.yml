@@ -90,8 +90,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: firebase/rules-tests/package-lock.json
 
       - name: Set up Java for Firebase emulators
         uses: actions/setup-java@v4
