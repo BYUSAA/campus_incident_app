@@ -91,7 +91,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\tooling\bootstrap-android.ps1
 ```
 
-The script generates the runner only if it is missing, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
+The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 for the current Firebase Android SDK, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
 
 The direct Flutter command is:
 
@@ -123,7 +123,7 @@ dart pub global activate flutterfire_cli
 flutterfire configure --project YOUR_FIREBASE_PROJECT_ID --platforms=android
 ```
 
-Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. Never commit service-account JSON, private keys, or passwords.
+Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. After `flutter pub get`, commit the generated `pubspec.lock` so the app's resolved dependency versions are reproducible. Never commit service-account JSON, private keys, or passwords.
 
 ## 4. Deploy security rules and indexes
 
