@@ -76,7 +76,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final email = context.watch<AuthProvider>().firebaseUser?.email ?? 'your ALU email';
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          child: Padding(
           padding: const EdgeInsets.all(AppConstants.paddingL),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -109,6 +110,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 child: const Text('Back to Login'),
               ),
             ],
+            ),
           ),
         ),
       ),
