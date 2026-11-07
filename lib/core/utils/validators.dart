@@ -4,7 +4,8 @@ class Validators {
   static String? validateEmail(String? value) {
     final email = value?.trim().toLowerCase() ?? '';
     if (email.isEmpty) return 'Email is required';
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+    if (email.length > 254 ||
+        !RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)) {
       return 'Enter a valid email address';
     }
     if (!email.endsWith(AppConstants.aluStudentDomain)) {
@@ -12,6 +13,9 @@ class Validators {
     }
     return null;
   }
+
+  static String? validateName(String? value) =>
+      _validateBoundedText(value, 'Name', 80);
 
   static String? validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Password is required';
