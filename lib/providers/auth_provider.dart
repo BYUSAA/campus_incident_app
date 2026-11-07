@@ -49,7 +49,10 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
 
+    _isInitialized = false;
     _user = null;
+    notifyListeners();
+
     try {
       final profile = await _repository.loadProfile(firebaseUser.uid);
       if (version != _authStateVersion) return;
