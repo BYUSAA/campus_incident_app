@@ -204,6 +204,7 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
 
+    _isLoading = true;
     _isInitialized = false;
     notifyListeners();
     try {
@@ -220,6 +221,7 @@ class AuthProvider extends ChangeNotifier {
       _profileError = 'Could not load your profile: $error';
     } finally {
       if (version == _authStateVersion) {
+        _isLoading = false;
         _isInitialized = true;
         notifyListeners();
       }
