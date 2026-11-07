@@ -4,7 +4,7 @@ Repositories coordinate application workflows and isolate screens/providers from
 
 ## AuthRepository
 
-Coordinates ALU email validation, Firebase account creation, student profile creation/loading, email verification, verified sign-in, and logout.
+Coordinates ALU email validation, Firebase account creation, student profile creation/loading, email verification, verified sign-in, password reset, display-name updates, and logout.
 
 ## UserRepository
 
@@ -17,7 +17,8 @@ Coordinates:
 - Incident creation and optional image upload.
 - Incident lookup and content updates.
 - Status updates to supported lifecycle values.
-- Report deletion and cleanup of associated Storage images.
+- Report deletion and best-effort cleanup of associated Storage images.
+- Photo replacement and removal while editing a submitted report.
 
 ## Change guidelines
 
