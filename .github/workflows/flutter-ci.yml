@@ -57,11 +57,31 @@ jobs:
             flutter create --platforms=android --org com.byusa .
           fi
 
+      - name: Validate Windows setup scripts
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem tooling -Filter *.ps1
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $file.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | Format-List
+              throw "PowerShell syntax validation failed: $($file.Name)"
+            }
+          }
+
       - name: Install Flutter dependencies
         run: flutter pub get
 
       - name: Format Dart sources
-        run: dart format lib test integration_test
+        run: |
+          dart format lib test integration_test
+          dart format --output=none --set-exit-if-changed lib test integration_test
 
       - name: Analyze Flutter code
         run: flutter analyze
@@ -106,6 +126,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Check Firebase rule-test JavaScript syntax
+        run: node --check firebase/rules-tests/test/security_rules.test.cjs
+
+      - name: Validate Firebase configuration JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('firebase.json')); JSON.parse(require('fs').readFileSync('firebase/rules-tests/package.json'));"
 
       - name: Install rule-test dependencies
         working-directory: firebase/rules-tests
