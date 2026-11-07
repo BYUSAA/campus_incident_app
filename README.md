@@ -251,14 +251,13 @@ Never add a client-side self-promotion switch or commit administrator credential
 
 ## Assignment submission
 
-The repository includes an **IEEE-style technical report PDF draft** and an editable Markdown source. The PDF records the architecture, data model, state management, roles, security, UI/UX, testing strategy, lessons learned, and references; its evidence-status table is deliberately honest about unverified live Firebase/device checks. Use:
-- [Technical report PDF draft](docs/Byusa_Martin_De_Poles_Assignment2.pdf)
-- [Technical report draft](docs/technical_report.md)
+The repository includes an editable IEEE-style technical report source covering the architecture, data model, state management, roles, security, UI/UX, testing strategy, lessons learned, and references. A formatted PDF draft is provided separately; it clearly labels unverified live Firebase/device checks and genuine screenshot/video placeholders. Use:
+- [Technical report source](docs/technical_report.md)
 - [Demo script](docs/demo_script.md)
 - [55-point rubric checklist](docs/submission_checklist.md)
 - [Screenshot evidence guide](docs/screenshots/README.md)
 
-Capture genuine screenshots from your configured Android app and Firebase Console. Add the real video URL and test outcomes, export the completed report as PDF, and use the Canvas naming format `StudentName_Assignment2.pdf`.
+Capture genuine screenshots from the configured Android app and Firebase Console. Add the real video URL and verified test outcomes to the report before submitting the final PDF with the Canvas naming format `StudentName_Assignment2.pdf`.
 
 ## Known limitations
 
