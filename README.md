@@ -82,18 +82,25 @@ git clone https://github.com/BYUSAA/campus_incident_app.git
 cd campus_incident_app
 ```
 
-## 2. Generate the Android platform
+## 2. Android platform
 
-The Git repository contains Android setup guidance rather than generated Gradle/Kotlin runner files. Generate the runner on the Windows development computer:
+The native Android application runner is committed in `android/`, including the application manifest, Kotlin `MainActivity`, Gradle project configuration, launcher resource, and themes. The Android application ID is `com.byusa.campus_incident_reporter`; the minimum supported Android API is 24.
+
+Run the app on an Android emulator or physical device from the repository root:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\tooling\bootstrap-android.ps1
+flutter pub get
+flutter devices
+flutter run
 ```
 
-The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 for the current Firebase Android SDK, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
+Build a debug APK:
 
-If you generate the Android runner manually instead of using the script, set `minSdk = 24` in `android/app/build.gradle.kts` (or `minSdkVersion 24` in Groovy Gradle) before building. Firebase Android SDK 35 requires API 24 or newer.
+```powershell
+flutter build apk --debug
+```
+
+The Gradle wrapper distribution is pinned in `android/gradle/wrapper/gradle-wrapper.properties`. Flutter's Android tooling supplies wrapper launch scripts when invoking Flutter build commands. Do not add local SDK paths or signing credentials to source control.
 
 ## 3. Configure Firebase
 
@@ -254,7 +261,7 @@ Capture genuine screenshots from your configured Android app and Firebase Consol
 
 ## Known limitations
 
-- Android runner files and Firebase options are generated on the developer's computer; they are not fabricated in this repository.
+- The Android runner is committed in source control. Firebase options remain project-specific and must be generated for the real Firebase project; no credentials or project IDs are fabricated.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
 - Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
