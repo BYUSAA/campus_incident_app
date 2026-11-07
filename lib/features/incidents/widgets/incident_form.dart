@@ -33,6 +33,7 @@ class _IncidentFormState extends State<IncidentForm> {
 
   late String _selectedCategory;
   File? _selectedPhoto;
+  bool _removeExistingPhoto = false;
   bool _isLoading = false;
 
   @override
@@ -88,7 +89,7 @@ class _IncidentFormState extends State<IncidentForm> {
           location: _locationController.text.trim(),
           reporterName: user.name,
         );
-        await provider.updateIncident(updated, photo: _selectedPhoto);
+        await provider.updateIncident(\n          updated,\n          photo: _selectedPhoto,\n          removePhoto: _removeExistingPhoto,\n        );
       }
 
       if (mounted) widget.onSuccess();
@@ -177,7 +178,15 @@ class _IncidentFormState extends State<IncidentForm> {
           const SizedBox(height: 12),
           PhotoPicker(
             selectedImage: _selectedPhoto,
+            existingImageUrl: _removeExistingPhoto
+                ? null
+                : widget.initialIncident?.imageUrl ??
+                    (widget.initialIncident?.photoUrls.isNotEmpty == true
+                        ? widget.initialIncident!.photoUrls.first
+                        : null),
             onImageSelected: (file) => setState(() => _selectedPhoto = file),
+            onExistingImageRemoved: () =>
+                setState(() => _removeExistingPhoto = true),
           ),
           const SizedBox(height: 28),
           SizedBox(
