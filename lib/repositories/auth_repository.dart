@@ -94,6 +94,11 @@ class AuthRepository {
       );
     }
 
+    // A recently verified account can still have an older email_verified
+    // claim in its cached ID token. Refresh the token before the first
+    // Firestore/Storage operation that relies on that claim in security rules.
+    await refreshedUser.getIdToken(true);
+
     final profile = await loadProfile(refreshedUser.uid);
     if (profile == null) {
       await _auth.logout();
