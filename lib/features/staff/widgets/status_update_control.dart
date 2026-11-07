@@ -8,10 +8,12 @@ class StatusUpdateControl extends StatelessWidget {
     super.key,
     required this.currentStatus,
     required this.onStatusChanged,
+    this.enabled = true,
   });
 
   final String currentStatus;
   final ValueChanged<String> onStatusChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +40,13 @@ class StatusUpdateControl extends StatelessWidget {
                 ),
               )
               .toList(),
-          onChanged: (status) {
-            if (status != null && status != currentStatus) {
-              onStatusChanged(status);
-            }
-          },
+          onChanged: enabled
+              ? (status) {
+                  if (status != null && status != currentStatus) {
+                    onStatusChanged(status);
+                  }
+                }
+              : null,
         ),
       ),
     );
