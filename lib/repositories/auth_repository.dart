@@ -31,7 +31,7 @@ class AuthRepository {
       throw ArgumentError('Your name must be between 1 and 80 characters.');
     }
     if (normalizedEmail.length > 254 ||
-        !RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+
 
     final credential = await _auth.register(
       email: normalizedEmail,
