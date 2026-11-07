@@ -50,3 +50,6 @@ It initializes Firebase and checks the signed-out navigation path. It is not yet
 - Full student-to-staff workflow tests using dedicated Firebase test accounts.
 
 Record real command output and the Flutter/Dart version used. Do not mark a test as passing until it has run successfully.
+
+
+The incident form validators also check the Firestore-aligned limits: title (100), description (1,000), and location (160) characters. These are unit tests for client-side validation only; backend rule behavior still needs Firebase Emulator Suite tests or manual verified-project checks.
