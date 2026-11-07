@@ -24,6 +24,13 @@ class ManageIncidentScreen extends StatefulWidget {
 class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
   bool _isUpdating = false;
   bool _isDeleting = false;
+  late String _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.incident.status;
+  }
 
   Future<void> _updateStatus(String status) async {
     if (_isUpdating || _isDeleting) return;
@@ -34,7 +41,7 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
         widget.incident.id,
         status,
       );
-      if (mounted) context.pop();
+      if (mounted) setState(() => _currentStatus = status);
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,7 +153,7 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
             ),
             const SizedBox(height: 12),
             StatusUpdateControl(
-              currentStatus: incident.status,
+              currentStatus: _currentStatus,
               enabled: !isBusy,
               onStatusChanged: _updateStatus,
             ),
