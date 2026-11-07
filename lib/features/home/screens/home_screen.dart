@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
+                    backgroundColor: AppConstants.primaryColor.withValues(alpha: 0.1),
                     child: const Icon(Icons.person_outline, color: AppConstants.primaryColor),
                   ),
                 ],
