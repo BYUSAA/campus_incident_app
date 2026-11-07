@@ -72,11 +72,21 @@ class IncidentRepository {
     return data == null ? null : Incident.fromMap(id, data);
   }
 
-  Future<void> update(Incident incident, {File? photo}) async {
-    final oldImageUrl = incident.imageUrl;
-    final newImageUrl = photo == null
-        ? oldImageUrl
-        : await _storage.uploadIncidentPhoto(file: photo, uid: incident.reportedBy);
+  Future<void> update(
+    Incident incident, {
+    File? photo,
+    bool removePhoto = false,
+  }) async {
+    final oldImageUrl = incident.imageUrl ??
+        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+    final newImageUrl = photo != null
+        ? await _storage.uploadIncidentPhoto(
+            file: photo,
+            uid: incident.reportedBy,
+          )
+        : removePhoto
+            ? null
+            : oldImageUrl;
     final photos = newImageUrl == null ? <String>[] : <String>[newImageUrl];
 
     try {
@@ -96,7 +106,9 @@ class IncidentRepository {
       rethrow;
     }
 
-    if (photo != null && oldImageUrl != null && oldImageUrl != newImageUrl) {
+    if ((photo != null || removePhoto) &&
+        oldImageUrl != null &&
+        oldImageUrl != newImageUrl) {
       await _deletePhotoBestEffort(oldImageUrl, 'replaced report photo');
     }
   }
