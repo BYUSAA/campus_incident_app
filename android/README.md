@@ -1,64 +1,44 @@
-# Android platform setup
+# Android platform
 
-Android is the primary development, test, and assignment-demonstration target.
+Android is the primary runtime target for Campus Incident Reporter and the required assignment demonstration platform.
 
-## Current repository state
+## Generated Android runner
 
-The repository contains setup guidance rather than generated Android Gradle, manifest, and Kotlin runner files. Generate the native runner using Flutter on the Windows development computer.
+The native Flutter Android project is generated with Flutter 3.47.2 and committed in this directory. It includes the Gradle settings and wrapper, application module, Android manifest, and Kotlin MainActivity.
 
-## Generate the Android runner
+- Android application ID: `com.byusa.campus_incident_reporter`
+- Kotlin namespace: `com.byusa.campus_incident_reporter`
+- Minimum Android SDK: API 24
+- Entry point: `app/src/main/kotlin/com/byusa/campus_incident_reporter/MainActivity.kt`
+
+The repository workflow `.github/workflows/bootstrap-android.yml` can generate and commit the runner when this directory is missing the Android manifest. The workflow preserves this README.
+
+## Run on Android
 
 From the repository root in PowerShell:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\tooling\bootstrap-android.ps1
+flutter pub get
+flutter devices
+flutter run
 ```
 
-The script:
-- Checks Flutter and displays `flutter doctor -v`.
-- Generates Android runner files only if the runner is missing.
-- Uses organization prefix `com.byusa`.
-- Installs Flutter dependencies.
-- Prints the generated Android application ID.
-
-For the current package name, the expected application ID is `com.byusa.campus_incident_reporter`. The Android minimum SDK is set to API 24 for Firebase Android SDK 35 compatibility. Confirm the actual value in `android/app/build.gradle.kts` and register that exact ID in Firebase Console.
-
-Direct commands:
+Build a debug APK:
 
 ```powershell
-flutter doctor -v
-flutter create --platforms=android --org com.byusa .
-flutter pub get
+flutter build apk --debug
 ```
 
-Review generated platform files before committing them. Preserve local SDK paths and signing configuration outside source control.
+## Firebase
 
-## Configure Firebase
-
-Enable Email/Password Authentication, Cloud Firestore, and Cloud Storage. Then run:
+Register the exact application ID above in the Firebase project. Enable Email/Password Authentication, Cloud Firestore, and Cloud Storage, then generate the project-specific Android options:
 
 ```powershell
 .\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
-This generates `lib/firebase_options.dart` for Android and asks before deploying Firestore rules/indexes and Storage rules. See [Firebase setup](../firebase/README.md).
+The generated `lib/firebase_options.dart` is specific to your Firebase project. It is intentionally not fabricated in source control. See [Firebase setup](../firebase/README.md).
 
-## Run and build
+## Security
 
-```powershell
-flutter devices
-flutter run
-flutter build apk --debug
-```
-
-Test gallery selection and camera capture on the actual Android target. Use an emulator image with Google Play services for Firebase-related device testing.
-
-## Security and evidence
-
-- Never commit keystore files, signing passwords, private signing keys, service account JSON, or local SDK paths.
-- Confirm the application ID and Firebase project before deploying.
-- Use dedicated test accounts and obscure personal information in evidence.
-- Record actual build/test results in the technical report.
-
-The GitHub Actions workflow generates a temporary Android runner in CI and builds a debug APK artifact. The developer's local runner still needs to be generated for the device demonstration.
+Do not commit `local.properties`, `key.properties`, signing keystores, service-account JSON, or private credentials. These are excluded by the root `.gitignore`.
