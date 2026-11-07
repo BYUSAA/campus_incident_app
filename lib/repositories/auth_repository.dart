@@ -94,7 +94,15 @@ class AuthRepository {
     return profile;
   }
 
-  Future<void> resendVerification() => _auth.sendVerificationEmail();\n\n  Future<void> sendPasswordResetEmail(String email) async {\n    final normalizedEmail = email.trim().toLowerCase();\n    final emailError = Validators.validateEmail(normalizedEmail);\n    if (emailError != null) throw ArgumentError(emailError);\n    await _auth.sendPasswordResetEmail(normalizedEmail);\n  }
+  Future<void> resendVerification() => _auth.sendVerificationEmail();
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    final emailError = Validators.validateEmail(normalizedEmail);
+    if (emailError != null) throw ArgumentError(emailError);
+    await _auth.sendPasswordResetEmail(normalizedEmail);
+  }
+
   Future<void> logout() => _auth.logout();
   Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
 
