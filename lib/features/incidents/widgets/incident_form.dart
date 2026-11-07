@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/utils/validators.dart';
+import '../../../core/constants/incident_categories.dart';\nimport '../../../core/utils/validators.dart';
 import '../../../models/incident.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
@@ -52,7 +52,7 @@ class _IncidentFormState extends State<IncidentForm> {
         TextEditingController(text: initial?.description ?? '');
     _locationController =
         TextEditingController(text: initial?.location ?? '');
-    _selectedCategory = initial?.category ?? 'Facilities';
+    final initialCategory = initial?.category;\n    _selectedCategory = IncidentCategories.names.contains(initialCategory)\n        ? initialCategory!\n        : IncidentCategories.names.first;
   }
 
   @override
