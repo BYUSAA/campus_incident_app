@@ -35,13 +35,15 @@ class IncidentProvider extends ChangeNotifier {
     return null;
   }
 
-  /// Selects exactly one live feed for the current authenticated profile.
+  /// Selects one live feed for the current authenticated profile.
   ///
-  /// Calling this repeatedly for the same user is safe and does not create
-  /// duplicate Firestore listeners.
-  void watchForUser(AppUser? user) {
+  /// Repeated calls for the same profile do not create duplicate listeners.
+  /// Set [notify] to false when this is called by a Provider proxy update
+  /// during a widget build; the related AuthProvider update already rebuilds
+  /// dependent widgets.
+  void watchForUser(AppUser? user, {bool notify = true}) {
     if (user == null) {
-      clear();
+      clear(notify: notify);
       return;
     }
 
@@ -49,9 +51,13 @@ class IncidentProvider extends ChangeNotifier {
     if (_activeScope == scope && _subscription != null) return;
 
     if (user.isStaff) {
-      _subscribe(_repository.watchAll(), scope: scope);
+      _subscribe(_repository.watchAll(), scope: scope, notify: notify);
     } else {
-      _subscribe(_repository.watchMine(user.uid), scope: scope);
+      _subscribe(
+        _repository.watchMine(user.uid),
+        scope: scope,
+        notify: notify,
+      );
     }
   }
 
@@ -67,19 +73,41 @@ class IncidentProvider extends ChangeNotifier {
     _subscribe(_repository.watchAll(), scope: scope);
   }
 
-  void refresh() {
+  Future<void> refresh() async {
     final scope = _activeScope;
     if (scope == null) return;
 
+    final firstSnapshot = Completer<void>();
+    void completeRefresh() {
+      if (!firstSnapshot.isCompleted) firstSnapshot.complete();
+    }
+
     if (scope == 'staff:all') {
-      _subscribe(_repository.watchAll(), scope: scope, force: true);
+      _subscribe(
+        _repository.watchAll(),
+        scope: scope,
+        force: true,
+        onFirstSnapshot: completeRefresh,
+      );
     } else if (scope.startsWith('student:')) {
       final uid = scope.substring('student:'.length);
-      _subscribe(_repository.watchMine(uid), scope: scope, force: true);
+      _subscribe(
+        _repository.watchMine(uid),
+        scope: scope,
+        force: true,
+        onFirstSnapshot: completeRefresh,
+      );
+    } else {
+      return;
     }
+
+    await firstSnapshot.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {},
+    );
   }
 
-  void clear() {
+  void clear({bool notify = true}) {
     if (_activeScope == null &&
         _subscription == null &&
         _incidents.isEmpty &&
@@ -96,13 +124,15 @@ class IncidentProvider extends ChangeNotifier {
     _isLoading = false;
     _errorMessage = null;
     if (previous != null) unawaited(previous.cancel());
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   void _subscribe(
     Stream<List<Incident>> stream, {
     required String scope,
     bool force = false,
+    bool notify = true,
+    VoidCallback? onFirstSnapshot,
   }) {
     if (!force && _activeScope == scope && _subscription != null) return;
 
@@ -114,11 +144,19 @@ class IncidentProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     if (previous != null) unawaited(previous.cancel());
-    notifyListeners();
+    if (notify) notifyListeners();
+
+    var didReceiveFirstEvent = false;
+    void finishFirstEvent() {
+      if (didReceiveFirstEvent) return;
+      didReceiveFirstEvent = true;
+      onFirstSnapshot?.call();
+    }
 
     _subscription = stream.listen(
       (items) {
         if (version != _streamVersion) return;
+        finishFirstEvent();
         _incidents = items;
         _isLoading = false;
         _errorMessage = null;
@@ -126,6 +164,7 @@ class IncidentProvider extends ChangeNotifier {
       },
       onError: (Object error) {
         if (version != _streamVersion) return;
+        finishFirstEvent();
         _isLoading = false;
         _errorMessage = error.toString();
         notifyListeners();
