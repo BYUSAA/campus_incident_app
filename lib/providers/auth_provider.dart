@@ -83,9 +83,19 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     await _runLoading(() async {
-      _user = await _repository.login(email, password);
-      _firebaseUser = _repository.currentUser;
+      final profile = await _repository.login(email, password);
+      final firebaseUser = _repository.currentUser;
+      if (firebaseUser == null) {
+        throw StateError('The signed-in Firebase session is no longer available.');
+      }
+
+      // Invalidate any profile read started by the auth-state stream so it
+      // cannot overwrite the profile returned by this completed login.
+      ++_authStateVersion;
+      _firebaseUser = firebaseUser;
+      _user = profile;
       _profileError = null;
+      _isInitialized = true;
     });
   }
 
@@ -96,16 +106,30 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
-      _firebaseUser = _repository.currentUser;
-      if (_firebaseUser != null) {
-        _user = await _repository.loadProfile(_firebaseUser!.uid);
-        if (_user == null) {
-          throw StateError(
-            'Your account was created, but its profile could not be loaded. '
-            'Please contact the project administrator.',
-          );
-        }
+      final firebaseUser = _repository.currentUser;
+      if (firebaseUser == null) {
+        throw StateError('Firebase did not keep the newly created session.');
       }
+
+      // Account creation emits an auth event before its Firestore profile is
+      // necessarily readable. Invalidate that early read and reload now that
+      // the repository has completed profile creation.
+      final version = ++_authStateVersion;
+      _firebaseUser = firebaseUser;
+      _isInitialized = false;
+      notifyListeners();
+
+      final profile = await _repository.loadProfile(firebaseUser.uid);
+      if (version != _authStateVersion) return;
+      if (profile == null) {
+        throw StateError(
+          'Your account was created, but its profile could not be loaded. '
+          'Please contact the project administrator.',
+        );
+      }
+      _user = profile;
+      _profileError = null;
+      _isInitialized = true;
     });
   }
 
