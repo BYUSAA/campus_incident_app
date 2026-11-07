@@ -1,81 +1,92 @@
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:campus_incident_reporter/core/routing/app_router.dart';
 
 void main() {
   group('AppRouter.redirectFor', () {
-    const signedOut = {
-      'isInitialized': true,
-      'hasFirebaseUser': false,
-      'emailVerified': false,
-      'hasProfile': false,
-      'isStaff': false,
-    };
-
-    const verifiedStudent = {
-      'isInitialized': true,
-      'hasFirebaseUser': true,
-      'emailVerified': true,
-      'hasProfile': true,
-      'isStaff': false,
-    };
-
-    const verifiedStaff = {
-      'isInitialized': true,
-      'hasFirebaseUser': true,
-      'emailVerified': true,
-      'hasProfile': true,
-      'isStaff': true,
-    };
+    String? route({
+      required String path,
+      bool isInitialized = true,
+      bool hasFirebaseUser = true,
+      bool emailVerified = true,
+      bool hasProfile = true,
+      bool isStaff = false,
+    }) {
+      return AppRouter.redirectFor(
+        path: path,
+        isInitialized: isInitialized,
+        hasFirebaseUser: hasFirebaseUser,
+        emailVerified: emailVerified,
+        hasProfile: hasProfile,
+        isStaff: isStaff,
+      );
+    }
 
     test('keeps an unresolved session on the splash screen', () {
       expect(
-        AppRouter.redirectFor(
+        route(
           path: AppRouter.home,
           isInitialized: false,
           hasFirebaseUser: false,
           emailVerified: false,
           hasProfile: false,
-          isStaff: false,
         ),
         '/splash',
+      );
+      expect(
+        route(
+          path: '/splash',
+          isInitialized: false,
+          hasFirebaseUser: false,
+          emailVerified: false,
+          hasProfile: false,
+        ),
+        isNull,
       );
     });
 
     test('sends signed-out users to login and keeps login/register public', () {
       expect(
-        AppRouter.redirectFor(path: AppRouter.staffDashboard, ...signedOut),
+        route(
+          path: AppRouter.staffDashboard,
+          hasFirebaseUser: false,
+          emailVerified: false,
+          hasProfile: false,
+        ),
         AppRouter.login,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.login, ...signedOut),
+        route(
+          path: AppRouter.login,
+          hasFirebaseUser: false,
+          emailVerified: false,
+          hasProfile: false,
+        ),
         isNull,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.register, ...signedOut),
+        route(
+          path: AppRouter.register,
+          hasFirebaseUser: false,
+          emailVerified: false,
+          hasProfile: false,
+        ),
         isNull,
       );
     });
 
     test('requires email verification before protected pages', () {
       expect(
-        AppRouter.redirectFor(
+        route(
           path: AppRouter.home,
-          isInitialized: true,
-          hasFirebaseUser: true,
           emailVerified: false,
-          hasProfile: true,
-          isStaff: false,
         ),
         AppRouter.verifyEmail,
       );
       expect(
-        AppRouter.redirectFor(
+        route(
           path: AppRouter.verifyEmail,
-          isInitialized: true,
-          hasFirebaseUser: true,
           emailVerified: false,
-          hasProfile: true,
-          isStaff: false,
         ),
         isNull,
       );
@@ -83,52 +94,54 @@ void main() {
 
     test('routes verified accounts without a profile to recovery', () {
       expect(
-        AppRouter.redirectFor(
+        route(
           path: AppRouter.home,
-          isInitialized: true,
-          hasFirebaseUser: true,
-          emailVerified: true,
           hasProfile: false,
-          isStaff: false,
         ),
         AppRouter.profileRecovery,
+      );
+      expect(
+        route(
+          path: AppRouter.profileRecovery,
+          hasProfile: false,
+        ),
+        isNull,
       );
     });
 
     test('allows students to use student routes and blocks staff routes', () {
+      expect(route(path: AppRouter.home), isNull);
+      expect(route(path: AppRouter.createIncident), isNull);
+      expect(route(path: AppRouter.incidents), isNull);
       expect(
-        AppRouter.redirectFor(path: AppRouter.home, ...verifiedStudent),
-        isNull,
-      );
-      expect(
-        AppRouter.redirectFor(path: AppRouter.createIncident, ...verifiedStudent),
-        isNull,
-      );
-      expect(
-        AppRouter.redirectFor(path: AppRouter.staffDashboard, ...verifiedStudent),
+        route(path: AppRouter.staffDashboard),
         AppRouter.home,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.manageIncident, ...verifiedStudent),
+        route(path: AppRouter.manageIncident),
         AppRouter.home,
       );
     });
 
     test('limits staff to the review dashboard and incident management', () {
       expect(
-        AppRouter.redirectFor(path: AppRouter.staffDashboard, ...verifiedStaff),
+        route(path: AppRouter.staffDashboard, isStaff: true),
         isNull,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.manageIncident, ...verifiedStaff),
+        route(path: AppRouter.manageIncident, isStaff: true),
         isNull,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.createIncident, ...verifiedStaff),
+        route(path: AppRouter.createIncident, isStaff: true),
         AppRouter.staffDashboard,
       );
       expect(
-        AppRouter.redirectFor(path: AppRouter.profile, ...verifiedStaff),
+        route(path: AppRouter.profile, isStaff: true),
+        AppRouter.staffDashboard,
+      );
+      expect(
+        route(path: AppRouter.myIncidents, isStaff: true),
         AppRouter.staffDashboard,
       );
     });
