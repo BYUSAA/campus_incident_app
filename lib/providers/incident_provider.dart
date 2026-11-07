@@ -20,6 +20,7 @@ class IncidentProvider extends ChangeNotifier {
   List<Incident> _incidents = const [];
   bool _isLoading = false;
   String? _errorMessage;
+  int _streamVersion = 0;
 
   List<Incident> get incidents => List.unmodifiable(_incidents);
   bool get isLoading => _isLoading;
@@ -42,19 +43,23 @@ class IncidentProvider extends ChangeNotifier {
   }
 
   void _subscribe(Stream<List<Incident>> stream) {
+    final version = ++_streamVersion;
     _subscription?.cancel();
+    _incidents = const [];
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     _subscription = stream.listen(
       (items) {
+        if (version != _streamVersion) return;
         _incidents = items;
         _isLoading = false;
         _errorMessage = null;
         notifyListeners();
       },
       onError: (Object error) {
+        if (version != _streamVersion) return;
         _isLoading = false;
         _errorMessage = error.toString();
         notifyListeners();
@@ -86,6 +91,7 @@ class IncidentProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    ++_streamVersion;
     _subscription?.cancel();
     super.dispose();
   }
