@@ -44,6 +44,9 @@ class AuthRepository {
       );
     }
 
+    // The Auth account and its Firestore profile form the durable identity.
+    // Roll back Auth only if the profile itself cannot be created; a temporary
+    // verification-email outage must not leave an orphaned profile document.
     try {
       await firebaseUser.updateDisplayName(normalizedName);
       await _users.create(
@@ -54,15 +57,22 @@ class AuthRepository {
           role: 'student',
         ),
       );
-      await _verification.send(firebaseUser);
     } catch (_) {
-      // Avoid leaving an Auth account without its required profile.
       try {
         await firebaseUser.delete();
       } catch (_) {
         await _auth.logout();
       }
       rethrow;
+    }
+
+    try {
+      await _verification.send(firebaseUser);
+    } catch (error) {
+      throw StateError(
+        'Your account was created, but the verification email could not be sent. '
+        'Use Resend verification email on the next screen. $error',
+      );
     }
   }
 
