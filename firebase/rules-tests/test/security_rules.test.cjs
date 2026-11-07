@@ -317,6 +317,18 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       );
     });
 
+    it('rejects files at or above the 8 MB limit', async function () {
+      const storage = student().storage();
+      const fileRef = ref(storage, 'incident_photos/student-1/oversized.jpg');
+      const oversizedBytes = new Uint8Array(8 * 1024 * 1024);
+
+      await assertFails(
+        uploadBytes(fileRef, oversizedBytes, {
+          contentType: 'image/jpeg',
+        }),
+      );
+    });
+
     it('allows authorized staff to read and delete uploaded evidence', async function () {
       await testEnv.withSecurityRulesDisabled(async (context) => {
         await uploadBytes(
