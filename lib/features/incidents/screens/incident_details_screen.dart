@@ -16,13 +16,16 @@ class IncidentDetailsScreen extends StatelessWidget {
   Future<void> _deleteIncident(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete report?'),
         content: const Text('This will permanently remove the report.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete'),
           ),
         ],
@@ -45,9 +48,12 @@ class IncidentDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
-    final canEdit = user != null && user.uid == incident.reportedBy && incident.status == 'Submitted';
+    final canEdit = user != null &&
+        user.uid == incident.reportedBy &&
+        incident.status == 'Submitted';
     final imageUrl = incident.imageUrl ??
         (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -82,13 +88,17 @@ class IncidentDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   height: 210,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => _imagePlaceholder(),
+                  errorBuilder: (context, error, stack) =>
+                      _imagePlaceholder(context),
                 ),
               )
             else
-              _imagePlaceholder(),
+              _imagePlaceholder(context),
             const SizedBox(height: 20),
-            Text(incident.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              incident.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -96,43 +106,43 @@ class IncidentDetailsScreen extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Chip(label: Text(incident.category)),
-                _statusBadge(incident.status),
+                _statusBadge(context, incident.status),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               'Submitted on ${DateFormat('MMM d, yyyy • h:mm a').format(incident.createdAt)}',
-              style: const TextStyle(color: AppConstants.greyText, fontSize: 12),
+              style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
             ),
             if (incident.reporterName?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               Text('Reported by ${incident.reporterName}'),
             ],
             const Divider(height: 32),
-            const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Description', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Text(incident.description, style: const TextStyle(height: 1.5)),
             const SizedBox(height: 24),
-            const Text('Location', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Location', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 18, color: AppConstants.greyText),
+                Icon(Icons.location_on_outlined, size: 18, color: colors.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Expanded(child: Text(incident.location)),
               ],
             ),
             const SizedBox(height: 24),
-            const Text('Status progress', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('Status progress', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 14),
-            _timeline(),
+            _timeline(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _imagePlaceholder(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Container(
       height: 180,
@@ -149,7 +159,7 @@ class IncidentDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(String status) {
+  Widget _statusBadge(BuildContext context, String status) {
     final colors = Theme.of(context).colorScheme;
     final color = status == 'Resolved'
         ? colors.tertiary
@@ -164,12 +174,17 @@ class IncidentDetailsScreen extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
-  Widget _timeline() {
+  Widget _timeline(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final currentStep = incident.status == 'Resolved'
         ? 2
         : incident.status == 'In Progress'
@@ -186,7 +201,7 @@ class IncidentDetailsScreen extends StatelessWidget {
                 width: 25,
                 height: 25,
                 decoration: BoxDecoration(
-                  color: active ? AppConstants.primaryColor : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: active ? colors.primary : colors.surfaceContainerHighest,
                   shape: BoxShape.circle,
                 ),
                 child: active
@@ -199,7 +214,7 @@ class IncidentDetailsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
-                  color: active ? AppConstants.primaryColor : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: active ? colors.primary : colors.onSurfaceVariant,
                 ),
               ),
             ],
