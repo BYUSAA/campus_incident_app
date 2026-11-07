@@ -1,48 +1,67 @@
 # Local setup scripts
 
-The scripts in this folder automate the repeatable parts of the Windows setup. They do not contain Firebase project IDs, API keys, credentials, or service-account files.
+The scripts in this folder automate the repeatable Android, Firebase, and verification steps on Windows. They do not contain Firebase project IDs, API keys, credentials, or service-account files.
 
-## 1. Generate the Android platform
+## Recommended: one-command preparation
 
-Run from the repository root in PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\tooling\prepare-android-firebase.ps1 -FirebaseProjectId YOUR_FIREBASE_PROJECT_ID
+```
+
+The preparation script:
+- Checks Flutter, Dart, Node.js, and Java prerequisites.
+- Generates the Android runner using the `com.byusa` organization prefix if it is missing.
+- Checks Firebase CLI sign-in and opens the login flow if no account is authorized.
+- Configures FlutterFire for the selected Firebase project and Android platform.
+- Asks you to type `YES` before deploying Firestore rules/indexes and Storage rules.
+- Installs Flutter dependencies, formats the Dart source, runs `flutter analyze`, and runs `flutter test --coverage`.
+- Installs the Firebase Emulator test package and runs Firestore/Storage security-rule tests locally.
+- Builds the Android debug APK and verifies that the APK exists.
+
+The script stops on the first failing step and prints the command that needs attention. Emulator tests can be skipped only for a temporary setup-only run:
+
+```powershell
+.\tooling\prepare-android-firebase.ps1 -FirebaseProjectId YOUR_FIREBASE_PROJECT_ID -SkipEmulatorTests
+```
+
+Do not use the skip switch for final verification.
+
+## Individual scripts
+
+### Android only
+
+```powershell
 .\tooling\bootstrap-android.ps1
 ```
 
-The script creates the Android runner with organization prefix `com.byusa`, installs Flutter dependencies, and prints the generated application ID. With the current Flutter project name, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering it in Firebase Console.
-
-The script does not overwrite an existing Android runner.
-
-## 2. Configure the Firebase project
-
-Use the project ID shown in your Firebase Console:
+### Firebase configuration and optional deployment
 
 ```powershell
 .\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
-The script installs/checks the Firebase CLI and FlutterFire CLI, selects the requested project, runs `flutterfire configure --platforms=android`, and verifies that the generated options file replaced the repository placeholder. It asks for an explicit `YES` before deploying Firestore rules, indexes, or Storage rules.
+The Firebase bootstrap uses explicit `--project` arguments so it does not depend on a local project alias. Review the deployment target before confirming.
 
-Before accepting deployment, confirm in Firebase Console that Email/Password Authentication, Cloud Firestore, and Cloud Storage are enabled and that this is the correct project.
+## After preparation
 
-## 3. Verify the mobile app
+Connect the Android emulator or phone, then run:
 
 ```powershell
-flutter pub get
-dart format lib test integration_test
-flutter analyze
-flutter test
-flutter build apk --debug
 flutter devices
 flutter run
 ```
 
-Run the student workflow and a separate administrator-assigned staff workflow on an Android emulator or physical device. Record real outcomes in the technical report.
+Run the Android integration smoke test on the device:
+
+```powershell
+flutter test integration_test/app_workflow_test.dart
+```
 
 ## Safety
 
 - Never add Firebase Admin SDK service-account JSON, private keys, passwords, or signing files to Git.
-- The FlutterFire options file contains client configuration identifiers, not Admin SDK credentials.
-- The scripts do not create test users, change roles, fabricate screenshots, or produce a demonstration video.
+- FlutterFire options contain client configuration identifiers, not Admin SDK credentials.
+- The scripts do not create fake test evidence, user accounts, or staff roles.
