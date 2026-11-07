@@ -124,7 +124,8 @@ class AuthProvider extends ChangeNotifier {
             : null;
       } catch (error) {
         _user = null;
-        _profileError = 'Email is verified, but the profile could not be loaded: $error';
+        _profileError =
+            'Email is verified, but the profile could not be loaded: $error';
       } finally {
         if (version == _authStateVersion) {
           _isInitialized = true;
@@ -137,7 +138,10 @@ class AuthProvider extends ChangeNotifier {
     return verified;
   }
 
-  Future<void> resendVerification() => _repository.resendVerification();\n\n  Future<void> sendPasswordResetEmail(String email) =>\n      _repository.sendPasswordResetEmail(email);
+  Future<void> resendVerification() => _repository.resendVerification();
+
+  Future<void> sendPasswordResetEmail(String email) =>
+      _repository.sendPasswordResetEmail(email);
 
   Future<void> logout() async {
     await _repository.logout();
