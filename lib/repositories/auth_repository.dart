@@ -23,8 +23,12 @@ class AuthRepository {
     required String password,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
-    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-            .hasMatch(normalizedEmail) ||
+    final atIndex = normalizedEmail.indexOf('@');
+    final hasValidEmailShape = atIndex > 0 &&
+        atIndex == normalizedEmail.lastIndexOf('@') &&
+        normalizedEmail.lastIndexOf('.') > atIndex;
+
+    if (!hasValidEmailShape ||
         normalizedEmail.length > 254 ||
         !normalizedEmail.endsWith(AppConstants.aluStudentDomain)) {
       throw ArgumentError(
@@ -56,16 +60,26 @@ class AuthRepository {
       );
     }
 
-    await firebaseUser.updateDisplayName(normalizedName);
-    await _users.create(
-      AppUser(
-        uid: firebaseUser.uid,
-        name: normalizedName,
-        email: normalizedEmail,
-        role: 'student',
-      ),
-    );
-    await _verification.send(firebaseUser);
+    try {
+      await firebaseUser.updateDisplayName(normalizedName);
+      await _users.create(
+        AppUser(
+          uid: firebaseUser.uid,
+          name: normalizedName,
+          email: normalizedEmail,
+          role: 'student',
+        ),
+      );
+      await _verification.send(firebaseUser);
+    } catch (_) {
+      // Avoid leaving an Auth account without its required profile.
+      try {
+        await firebaseUser.delete();
+      } catch (_) {
+        await _auth.logout();
+      }
+      rethrow;
+    }
   }
 
   Future<AppUser?> login(String email, String password) async {
@@ -88,6 +102,7 @@ class AuthRepository {
 
     final profile = await loadProfile(refreshedUser.uid);
     if (profile == null) {
+      await _auth.logout();
       throw StateError(
         'Your account profile is missing. Contact the project administrator.',
       );
@@ -96,9 +111,7 @@ class AuthRepository {
   }
 
   Future<void> resendVerification() => _auth.sendVerificationEmail();
-
   Future<void> logout() => _auth.logout();
-
   Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
 
   Future<bool> refreshVerification() async {
