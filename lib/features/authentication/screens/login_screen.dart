@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  Future<void> _login() async {
+  Future<void> _resetPassword() async {\n    final emailError = Validators.validateEmail(_emailController.text);\n    if (emailError != null) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        SnackBar(content: Text(emailError)),\n      );\n      return;\n    }\n\n    try {\n      await context.read<AuthProvider>().sendPasswordResetEmail(\n        _emailController.text,\n      );\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          const SnackBar(\n            content: Text('If the account exists, a password reset email has been sent.'),\n          ),\n        );\n      }\n    } catch (error) {\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(content: Text('Could not request a password reset: $error')),\n        );\n      }\n    }\n  }\n\n  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     try {
       await context.read<AuthProvider>().login(
