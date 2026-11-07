@@ -34,7 +34,7 @@ There is no in-app role switch. A student cannot grant themselves staff access t
 
 ## 3. Technical architecture
 
-The codebase separates presentation, state, application workflows, Firebase access, and data models. This separation reduces direct Firebase calls from screens and makes the main workflows easier to maintain.
+The codebase separates presentation, state, application workflows, Firebase access, and data models. The app retains Flutter SDK Material widgets and uses the compatible `go_router` 17.x line; it does not mix the newer standalone Material UI types into the existing widget tree. This separation reduces direct Firebase calls from screens and makes the main workflows easier to maintain.
 
 | Layer | Project location | Responsibility |
 | --- | --- | --- |
