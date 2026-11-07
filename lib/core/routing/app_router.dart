@@ -65,11 +65,17 @@ class AppRouter {
 
         final isStaff = appUser.isStaff;
         if (isStaff) {
+          // Staff use the review queue rather than student submission routes.
+          // Firebase Rules remain the authoritative access-control boundary.
           if (path == '/splash' ||
               path == login ||
               path == register ||
               path == verifyEmail ||
-              path == home) {
+              path == profileRecovery ||
+              path == home ||
+              path == myIncidents ||
+              path == createIncident ||
+              path == editIncident) {
             return staffDashboard;
           }
         } else {
