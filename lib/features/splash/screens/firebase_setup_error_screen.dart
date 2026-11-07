@@ -135,7 +135,7 @@ class FirebaseSetupErrorApp extends StatelessWidget {
                     const SizedBox(height: 20),
                     Divider(color: colorScheme.outlineVariant),
                     Text(
-                      'Diagnostic: \${error.runtimeType}',
+                      'Diagnostic: ${error.runtimeType}',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
