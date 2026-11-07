@@ -1,76 +1,76 @@
 # Campus Incident Reporter
 
-A Flutter + Firebase mobile application for reporting, tracking, and managing campus incidents such as damaged facilities, water interruptions, electrical faults, sanitation problems, and safety concerns.
+A Flutter Android application for reporting, tracking, and managing campus incidents such as damaged facilities, water interruptions, electrical faults, sanitation problems, and safety concerns.
 
-> **Primary target:** Android emulator or physical Android device.  
-> **Firebase setup:** Project-specific options must be generated locally; this repository intentionally does not contain fabricated Firebase credentials.
+**Primary platform:** Android
+**Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
+**State management:** Provider (`ChangeNotifier`)
+**Navigation:** `go_router`
+**Workflow:** Submitted → In Progress → Resolved
 
-## Capabilities
+> Firebase project options are generated for the project selected by the developer. No Firebase IDs, API keys, or Admin SDK credentials are invented or committed here.
+
+## Student and staff workflows
 
 ### Students
-- Register with an `@alustudent.com` address, verify the email, sign in, and sign out.
-- Submit an incident with title, description, category, campus location, and optional image.
-- Select an image from the gallery or camera and upload it to Firebase Storage.
-- View, search, filter, and inspect personal reports.
+- Register with a valid `@alustudent.com` address and verify the email.
+- Submit reports with title, description, category, location, and an optional photo.
+- Upload incident photos from the camera or gallery to Firebase Storage.
+- View, search, filter, and inspect their own reports.
 - Edit or delete their own report while its status is `Submitted`.
-- Follow the report status: `Submitted`, `In Progress`, or `Resolved`.
+- Follow the status updates made by authorized staff.
 
-### Staff
-- Sign in with a separate verified ALU account.
-- Review the incident queue after a trusted administrator assigns the `staff` role.
-- Update incident status and review report details.
+### Authorized staff
+- Sign in with a separate verified ALU account assigned the `staff` role by a trusted Firebase administrator.
+- Review the campus incident queue.
+- Move report status forward: `Submitted` → `In Progress` → `Resolved`.
+- Moderate reports and remove associated evidence when necessary.
 
-### Engineering
-- Provider-based state management and layered screen/provider/repository/service architecture.
-- Firebase Authentication, Cloud Firestore, and Firebase Storage.
-- Firestore and Storage security rules and Firestore index configuration.
-- Unit/widget tests, device smoke-test scaffold, and GitHub Actions quality workflow.
-- Technical report, architecture diagram source, and demo checklist.
+There is no client-side role promotion. Firebase rules, not hidden navigation controls, enforce ownership and staff access.
 
 ## Architecture
 
 ```text
-Flutter screens and shared widgets
-              |
-              v
-        Provider state
-              |
-              v
-          Repositories
-              |
-              v
-      Firebase services
-       /      |       \
-      v       v        v
-    Auth  Firestore  Storage
+Flutter feature screens and shared widgets
+                  |
+                  v
+            Provider state
+                  |
+                  v
+              Repositories
+                  |
+                  v
+             Firebase services
+             /       |        \
+            v        v         v
+       Firebase   Cloud      Firebase
+         Auth    Firestore   Storage
 ```
 
-See [the architecture guide](docs/architecture/README.md) and [Mermaid source](docs/architecture/architecture_diagram.mmd).
+| Layer | Location | Responsibility |
+| --- | --- | --- |
+| Presentation | `lib/features/`, `lib/shared/` | Screens, reusable widgets, forms, navigation |
+| State | `lib/providers/` | Authentication, incident streams, theme |
+| Workflows | `lib/repositories/` | Registration and incident operations |
+| Firebase adapters | `lib/services/` | Authentication, Firestore, Storage |
+| Models | `lib/models/` | User and incident mapping |
+| Core | `lib/core/` | Routes, validation, theme, status constants |
+| Backend rules | `firebase/` | Firestore/Storage access control and indexes |
+| Tests and evidence | `test/`, `integration_test/`, `docs/` | Automated tests, report, screenshots, demo |
 
-## Repository map
-
-| Location | Purpose |
-| --- | --- |
-| `lib/features/` | Authentication, home, incidents, profile, settings, and staff UI |
-| `lib/models/` | User and incident data models |
-| `lib/providers/` | Authentication, incident, and theme state |
-| `lib/repositories/` | Application workflows and data mapping |
-| `lib/services/` | Firebase SDK integrations |
-| `lib/core/` | Routing, constants, validation, errors, and themes |
-| `lib/shared/` | Reusable widgets and app navigation |
-| `firebase/` | Firestore rules, Storage rules, and indexes |
-| `docs/` | Technical report, architecture, screenshots, and demo script |
-| `test/` | Unit and widget tests |
-| `integration_test/` | Device-level smoke test |
+See [the architecture guide](docs/architecture/README.md) and [Mermaid diagram](docs/architecture/architecture_diagram.mmd).
 
 ## Requirements
 
-Install Flutter (stable), Android Studio, Android SDK, an Android emulator or physical device, Node.js/npm, Firebase CLI, and FlutterFire CLI. Check your local toolchain:
+Install Flutter stable, Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
 
 ```powershell
-flutter doctor
+flutter doctor -v
 flutter --version
 dart --version
+java -version
+node --version
+npm --version
 ```
 
 ## 1. Clone the repository
@@ -80,144 +80,179 @@ git clone https://github.com/BYUSAA/campus_incident_app.git
 cd campus_incident_app
 ```
 
-## 2. Generate Android runner files
+## 2. Generate the Android platform
 
-The committed `android/` directory contains setup guidance rather than generated Gradle/Kotlin runner files. Generate them using your installed Flutter SDK:
+The Git repository contains Android setup guidance rather than generated Gradle/Kotlin runner files. Generate the runner on the Windows development computer:
 
 ```powershell
-flutter create --platforms=android .
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\tooling\bootstrap-android.ps1
 ```
 
-Review the generated Android application ID before registering the app in Firebase Console. Inspect the Git diff to ensure the existing Dart sources remain intact.
+The script generates the runner only if it is missing, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
+
+The direct Flutter command is:
+
+```powershell
+flutter create --platforms=android --org com.byusa .
+```
 
 ## 3. Configure Firebase
 
-Install and sign in to Firebase CLI, then install FlutterFire CLI:
+In Firebase Console, register the Android application ID and enable:
+- Authentication → Sign-in method → Email/Password
+- Cloud Firestore
+- Cloud Storage
+
+Then run from the repository root using your actual Firebase project ID:
+
+```powershell
+.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
+```
+
+The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It asks you to type `YES` before deploying any backend rules.
+
+Manual alternative:
 
 ```powershell
 npm install -g firebase-tools
 firebase login
 dart pub global activate flutterfire_cli
+flutterfire configure --project YOUR_FIREBASE_PROJECT_ID --platforms=android
 ```
 
-Register the Android application ID with your Firebase project and run:
+Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. Never commit service-account JSON, private keys, or passwords.
+
+## 4. Deploy security rules and indexes
+
+Confirm the intended Firebase project before deploying:
 
 ```powershell
-flutterfire configure --platforms=android
+firebase projects:list
+firebase deploy --project YOUR_FIREBASE_PROJECT_ID --only firestore:rules,firestore:indexes,storage
 ```
 
-This creates the real `lib/firebase_options.dart`. The committed options file is a fail-fast placeholder. Do not replace it with guessed IDs, keys, or sample credentials.
+Rules in source control are not active on a live project until deployment succeeds. Review `firebase/README.md` first. Storage rules use a Firestore role lookup for staff access; deploy Firestore and Storage rules to the same Firebase project.
 
-In Firebase Console, enable **Authentication → Email/Password**, create a **Cloud Firestore** database, and enable **Firebase Storage**. Confirm the Storage requirements for your Firebase plan.
-
-## 4. Deploy backend configuration
-
-Select the Firebase project that matches the generated FlutterFire options, then deploy:
-
-```powershell
-firebase use --add
-firebase deploy --only firestore:rules,firestore:indexes,storage
-```
-
-Check the selected project before deploying. Rules in GitHub are not active on a Firebase project until deployment succeeds.
-
-## 5. Install, check, and run
+## 5. Run and verify the app
 
 ```powershell
 flutter pub get
 dart format lib test integration_test
 flutter analyze
 flutter test
+flutter build apk --debug
+flutter devices
 flutter run
 ```
 
-Build an Android debug APK with:
+The assignment requires Android or iOS runtime evidence. A browser-only run does not replace the Android emulator or physical-device demonstration.
 
-```powershell
-flutter build apk --debug
-```
-
-Report command outcomes only after the commands have actually completed. Record Flutter/Dart version and device details in the technical report.
-
-## Student and staff roles
-
-New accounts are always created as `student`. There is no in-app role switch.
-
-For a staff demo account:
-1. Register a separate ALU test account and verify its email.
-2. Find its `users/{uid}` document in Firestore.
-3. Have a trusted Firebase administrator change its `role` from `student` to `staff`.
-4. Sign out and sign back in using the staff account.
-
-Never let ordinary clients promote themselves. Route guards improve navigation; Firestore and Storage rules enforce actual authorization.
-
-## Firestore data model
+## Firebase data model
 
 ### `users/{uid}`
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `uid` | string | Firebase Authentication UID |
-| `name` | string | Display name |
-| `email` | string | ALU email |
-| `role` | string | `student` or admin-assigned `staff` |
-| `emailVerified` | boolean | Profile metadata; Auth token is authoritative |
-| `createdAt` | timestamp | Creation timestamp |
+| `name` | string | Profile name, 1–80 characters |
+| `email` | string | ALU student email |
+| `role` | string | `student` or administrator-assigned `staff` |
+| `emailVerified` | boolean | Profile metadata; Auth token claim is authoritative |
+| `createdAt` | timestamp | Server creation time |
 
 ### `incidents/{incidentId}`
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `title`, `description` | string | Report details |
-| `category`, `location` | string | Incident type and campus location |
+| `title` | string | 1–100 characters |
+| `description` | string | 1–1,000 characters |
+| `category` | string | Facilities, Water, Electricity, Safety, or Sanitation |
+| `location` | string | 1–160 characters |
 | `reportedBy` | string | Creator UID |
-| `reporterName` | string | Name captured at submission |
-| `status` | string | Submitted, In Progress, Resolved |
-| `createdAt`, `updatedAt` | timestamp | Creation and update time |
-| `imageUrl` | string/null | Optional image URL |
-| `photoUrls` | string array | Image URL list |
+| `reporterName` | string | Creator's name at submission |
+| `status` | string | Submitted, In Progress, or Resolved |
+| `createdAt`, `updatedAt` | timestamp | Server-side times |
+| `imageUrl` | string/null | Optional Storage download URL |
+| `photoUrls` | string array | Zero or one photo in the current app |
 | `assignedTo` | string/null | Optional staff assignment |
 
-The model also reads older incident documents that contain only `imageUrl`.
+The student feed filters by `reportedBy` and orders by `createdAt` descending. Its composite index is in `firebase/firestore.indexes.json`.
 
-## Security summary
+## Authorization summary
 
-- Incident access requires verified `@alustudent.com` authentication.
-- Students read only reports they own; staff can read the incident queue.
-- Students create reports only for themselves and with initial status `Submitted`.
-- Students may edit report content without changing owner, creation time, or status.
-- Staff updates are limited to status, assignment, and update timestamp.
-- Users cannot change their own role.
-- Images are stored at `incident_photos/{uid}/{fileName}`, limited to supported image MIME types and under 8 MB.
+- Incident operations require verified `@alustudent.com` email.
+- Students can read only their own reports; staff can read all reports.
+- Students create their own reports with initial status `Submitted`.
+- Students can edit or delete their own reports only while they remain `Submitted`.
+- Students cannot change report status, owner, reporter identity, or creation time.
+- Staff can progress reports only from Submitted to In Progress and then Resolved.
+- Users cannot promote themselves to staff.
+- Photos are stored under `incident_photos/{uid}/{fileName}`, limited to supported images smaller than 8 MB.
+- Staff may read/delete evidence for reports they moderate.
 
-Review [firebase/README.md](firebase/README.md) before deploying rules or using real data.
+## Automated tests
 
-## Final submission checklist
+### Flutter unit/widget tests
 
-- [ ] Android runner files generated.
-- [ ] FlutterFire options generated for the correct Firebase project.
-- [ ] Email/Password Auth, Firestore, and Storage enabled.
-- [ ] Rules and indexes deployed.
-- [ ] Student register/verify/login and incident workflows tested.
-- [ ] Gallery/camera photo upload tested.
-- [ ] Separate staff account assigned by an administrator and status update tested.
-- [ ] `flutter analyze`, `flutter test`, and Android debug build run and results recorded.
-- [ ] Genuine screenshots added under `docs/screenshots/`.
-- [ ] Demo video link added to `docs/technical_report.md`.
+```powershell
+flutter test
+```
 
-Use [the demo script](docs/demo_script.md) and [technical report](docs/technical_report.md). Hide personal information and credentials in evidence.
+Coverage includes input validation, incident model mapping, status progression, Provider stream behavior, required incident form validation, and incident card rendering.
 
-## Known boundaries
+### Firebase Emulator Suite rules tests
 
-Firebase options and native Android runner files must be generated locally. Staff access requires trusted administrator assignment. Filtering currently operates on the loaded list; large deployments may require server-side pagination. Theme selection is in-memory and is not persisted between launches. Push notifications and offline submission are not included.
+Requirements: Node.js 22+, Java 17+, Firebase CLI.
+
+```powershell
+cd firebase/rules-tests
+npm install
+cd ../..
+firebase emulators:exec --project demo-campus-incident-reporter --only firestore,storage "npm --prefix firebase/rules-tests test"
+```
+
+These tests use the local Firestore and Storage emulators with a `demo-` project ID, not the production Firebase project. They cover student ownership, role self-promotion, email verification, report lifecycle, photo ownership, MIME type, size limit, and staff evidence cleanup.
+
+### Device integration smoke test
+
+After Android and Firebase configuration:
+
+```powershell
+flutter devices
+flutter test integration_test/app_workflow_test.dart
+```
+
+The current device smoke test checks the signed-out redirect only. It does not replace the complete student/staff workflow demonstrated in the video.
+
+## Staff test account
+
+1. Register a second ALU test account and verify its email.
+2. Locate the account's `users/{uid}` document in Firestore.
+3. Have a trusted Firebase administrator change its role from `student` to `staff`.
+4. Sign out and sign back in with the staff account.
+5. Demonstrate the queue, status progression, and report photo access.
+
+Never add a client-side self-promotion switch or commit administrator credentials.
+
+## Assignment submission
+
+The assignment requires a **PDF technical report** and a **7–10 minute demonstration video**. Use:
+- [Technical report draft](docs/technical_report.md)
+- [Demo script](docs/demo_script.md)
+- [55-point rubric checklist](docs/submission_checklist.md)
+- [Screenshot evidence guide](docs/screenshots/README.md)
+
+Capture genuine screenshots from your configured Android app and Firebase Console. Add the real video URL and test outcomes, export the completed report as PDF, and use the Canvas naming format `StudentName_Assignment2.pdf`.
+
+## Known limitations
+
+- Android runner files and Firebase options are generated on the developer's computer; they are not fabricated in this repository.
+- Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
+- Theme selection currently lasts for the app session and is not persisted.
+- Push notifications, offline submission, and a full staff assignment workflow are not implemented.
+- The integration smoke test is narrower than the full manual demonstration.
 
 ## License
 
 See [LICENSE](LICENSE).
-
-
-## Assignment 2 submission evidence
-
-Use [the final submission checklist](docs/submission_checklist.md) to map the 55-point rubric to the evidence Canvas expects. The technical report draft is in [docs/technical_report.md](docs/technical_report.md), and the 7–10 minute recording outline is in [docs/demo_script.md](docs/demo_script.md).
-
-Before the application can be demonstrated on Android, generate the native Android runner and configure the actual Firebase project as described above. The checked-in Firebase options file is intentionally a fail-fast placeholder; the app cannot initialize Firebase until FlutterFire generates the project-specific options. The most recent recorded GitHub Actions run on main failed, so inspect the workflow result and run the checks locally before submission. Add only real screenshots, test outcomes, Firebase evidence, and the recorded demo URL to the final PDF.
