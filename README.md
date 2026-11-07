@@ -5,6 +5,7 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 **Primary platform:** Android
 **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
 **FlutterFire release set:** Firebase Flutter BoM 5.1.0
+**Navigation:** `go_router` 17.x, retaining Flutter SDK Material widget types during the assignment
 **State management:** Provider (`ChangeNotifier`)
 **Navigation:** `go_router`
 **Workflow:** Submitted → In Progress → Resolved
@@ -65,7 +66,7 @@ See [the architecture guide](docs/architecture/README.md) and [Mermaid diagram](
 
 ## Requirements
 
-Install Flutter 3.47.0 or newer (Dart 3.13.0 or newer), Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
+Install Flutter 3.41.0 or newer (Dart 3.11.0 or newer), Android Studio and Android SDK, an Android emulator or physical device, Node.js 22+, npm, Java 17+, Firebase CLI, and FlutterFire CLI.
 
 ```powershell
 flutter doctor -v
