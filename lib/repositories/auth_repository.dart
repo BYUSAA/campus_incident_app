@@ -77,6 +77,9 @@ class AuthRepository {
   }
 
   Future<AppUser?> login(String email, String password) async {
+    final emailError = Validators.validateEmail(email);
+    if (emailError != null) throw ArgumentError(emailError);
+
     await _auth.login(email, password);
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) {
