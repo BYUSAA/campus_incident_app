@@ -11,7 +11,7 @@ This folder contains the Firebase rules, Firestore index, and automated emulator
 
 ## Data and access model
 
-Newly registered ALU accounts receive the `student` role. A trusted Firebase administrator assigns the `staff` role to a separate account. The mobile client has no role promotion feature.
+Newly registered ALU accounts receive the `student` role. A trusted Firebase administrator assigns the `staff` role to a separate account. Users can read only their own profile document; staff-role checks use server-side rule lookups and do not grant staff a blanket read of student profiles. The mobile client has no role promotion feature.
 
 | Operation | Student | Authorized staff |
 | --- | --- | --- |
