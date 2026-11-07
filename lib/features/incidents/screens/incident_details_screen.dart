@@ -48,11 +48,24 @@ class IncidentDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final incidentState = context.watch<IncidentProvider>();
+    Incident? latestIncident;
+    for (final candidate in incidentState.incidents) {
+      if (candidate.id == incident.id) {
+        latestIncident = candidate;
+        break;
+      }
+    }
+    // The incident list is backed by a Firestore snapshot stream. Prefer its
+    // latest value so the status timeline changes without reopening this page.
+    final displayedIncident = latestIncident ?? incident;
     final canEdit = user != null &&
-        user.uid == incident.reportedBy &&
-        incident.status == 'Submitted';
-    final imageUrl = incident.imageUrl ??
-        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+        user.uid == displayedIncident.reportedBy &&
+        displayedIncident.status == 'Submitted';
+    final imageUrl = displayedIncident.imageUrl ??
+        (displayedIncident.photoUrls.isEmpty
+            ? null
+            : displayedIncident.photoUrls.first);
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -63,7 +76,7 @@ class IncidentDetailsScreen extends StatelessWidget {
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') {
-                  context.push('/edit-incident', extra: incident);
+                  context.push('/edit-incident', extra: displayedIncident);
                 } else if (value == 'delete') {
                   _deleteIncident(context);
                 }
@@ -96,7 +109,7 @@ class IncidentDetailsScreen extends StatelessWidget {
               _imagePlaceholder(context),
             const SizedBox(height: 20),
             Text(
-              incident.title,
+              displayedIncident.title,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
@@ -105,23 +118,23 @@ class IncidentDetailsScreen extends StatelessWidget {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Chip(label: Text(incident.category)),
-                _statusBadge(context, incident.status),
+                Chip(label: Text(displayedIncident.category)),
+                _statusBadge(context, displayedIncident.status),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              'Submitted on ${DateFormat('MMM d, yyyy • h:mm a').format(incident.createdAt)}',
+              'Submitted on ${DateFormat('MMM d, yyyy • h:mm a').format(displayedIncident.createdAt)}',
               style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
             ),
-            if (incident.reporterName?.isNotEmpty == true) ...[
+            if (displayedIncident.reporterName?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
-              Text('Reported by ${incident.reporterName}'),
+              Text('Reported by ${displayedIncident.reporterName}'),
             ],
             const Divider(height: 32),
             Text('Description', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
-            Text(incident.description, style: const TextStyle(height: 1.5)),
+            Text(displayedIncident.description, style: const TextStyle(height: 1.5)),
             const SizedBox(height: 24),
             Text('Location', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
@@ -129,13 +142,13 @@ class IncidentDetailsScreen extends StatelessWidget {
               children: [
                 Icon(Icons.location_on_outlined, size: 18, color: colors.onSurfaceVariant),
                 const SizedBox(width: 6),
-                Expanded(child: Text(incident.location)),
+                Expanded(child: Text(displayedIncident.location)),
               ],
             ),
             const SizedBox(height: 24),
             Text('Status progress', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 14),
-            _timeline(context),
+            _timeline(context, displayedIncident.status),
           ],
         ),
       ),
@@ -183,9 +196,9 @@ class IncidentDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _timeline(BuildContext context) {
+  Widget _timeline(BuildContext context, String status) {
     final colors = Theme.of(context).colorScheme;
-    final currentStep = incident.status == 'Resolved'
+    final currentStep = status == 'Resolved'
         ? 2
         : incident.status == 'In Progress'
             ? 1
