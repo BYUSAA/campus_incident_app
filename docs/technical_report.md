@@ -193,7 +193,9 @@ The project demonstrates why client-side navigation checks and backend authoriza
 
 Future improvements include Firebase Emulator security tests, paginated incident feeds, notification when report status changes, persistent appearance preferences, and a trusted staff assignment interface.
 
-## 11. Demonstration video
+## 11. Project repository and demonstration video
+
+**GitHub repository:** https://github.com/BYUSAA/campus_incident_app
 
 **Video URL:** Add the accessible URL for the genuine 7–10 minute Android demonstration before submission.
 
