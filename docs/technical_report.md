@@ -184,7 +184,7 @@ The automated tests do not replace testing against the student's configured Fire
 
 ## 9. Challenges and design trade-offs
 
-The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
+The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. The Windows `tooling/prepare-android-firebase.ps1` script automates native runner generation, FlutterFire configuration, Flutter formatting/analyze/tests, Firebase Emulator security tests, and the debug APK build. It requires the developer to select the actual Firebase project and asks for explicit confirmation before publishing rules.
 
 The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. Search and status filtering operate on reports currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
