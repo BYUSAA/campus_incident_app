@@ -4,10 +4,10 @@ Services encapsulate Firebase SDK calls so screens and providers do not depend d
 
 | Service | Responsibility |
 | --- | --- |
-| `FirebaseAuthService` | Create accounts, sign in, auth-state stream, verification email, reload, and sign out |
-| `EmailVerificationService` | Send verification emails and refresh verification state |
+| `FirebaseAuthService` | Create accounts, sign in, auth-state stream, verification email, password reset, reload, and sign out |
+| `EmailVerificationService` | Send verification emails, refresh the user, and force-refresh the ID-token verification claim |
 | `FirestoreService` | User-profile reads/writes and incident collection/document operations |
-| `StorageService` | Validate/upload incident photos and delete Storage objects by URL |
+| `StorageService` | Validate image extension/size, upload incident photos, and delete Storage objects by URL |
 
 ## Firebase configuration
 
