@@ -138,6 +138,22 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       await assertSucceeds(setDoc(doc(db, 'users', 'new-student'), profile));
     });
 
+    it('allows a student to update their own display name only', async function () {
+      const db = student().firestore();
+
+      await assertSucceeds(
+        updateDoc(doc(db, 'users', 'student-1'), {
+          name: 'Student One Updated',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(db, 'users', 'student-1'), {
+          emailVerified: true,
+        }),
+      );
+    });
+
     it('does not allow a student to promote their own role', async function () {
       const db = student().firestore();
       await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -242,12 +258,36 @@ describe('Campus Incident Reporter Firebase security rules', function () {
         updatedAt: serverTimestamp(),
         title: 'x'.repeat(101),
       };
+      const oversizedDescription = {
+        ...incidentData('student-1'),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        description: 'x'.repeat(1001),
+      };
+      const oversizedLocation = {
+        ...incidentData('student-1'),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        location: 'x'.repeat(161),
+      };
 
       await assertFails(
         setDoc(doc(db, 'incidents', 'invalid-category'), invalidCategory),
       );
       await assertFails(
         setDoc(doc(db, 'incidents', 'oversized-title'), oversizedTitle),
+      );
+      await assertFails(
+        setDoc(
+          doc(db, 'incidents', 'oversized-description'),
+          oversizedDescription,
+        ),
+      );
+      await assertFails(
+        setDoc(
+          doc(db, 'incidents', 'oversized-location'),
+          oversizedLocation,
+        ),
       );
     });
 
@@ -334,6 +374,28 @@ describe('Campus Incident Reporter Firebase security rules', function () {
     });
 
     it('does not allow staff to edit the original student report content', async function () {
+      const db = staff().firestore();
+
+      await assertFails(
+        updateDoc(doc(db, 'incidents', 'submitted-report'), {
+          title: 'Changed by staff',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    });
+
+    it('allows staff to resolve an In Progress report', async function () {
+      const db = staff().firestore();
+
+      await assertSucceeds(
+        updateDoc(doc(db, 'incidents', 'in-progress-report'), {
+          status: 'Resolved',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    });
+
+    it('does not allow staff to edit student-submitted content', async function () {
       const db = staff().firestore();
 
       await assertFails(
