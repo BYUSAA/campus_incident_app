@@ -103,9 +103,11 @@ class Incident {
     Object? reporterName = _notProvided,
     Object? assignedTo = _notProvided,
   }) {
-    final nextImageUrl = identical(imageUrl, _notProvided)
-        ? this.imageUrl
-        : imageUrl as String?;
+    final nextImageUrl = !identical(imageUrl, _notProvided)
+        ? imageUrl as String?
+        : photoUrls != null
+            ? (photoUrls.isEmpty ? null : photoUrls.first)
+            : this.imageUrl;
     final nextPhotoUrls = photoUrls ??
         (identical(imageUrl, _notProvided)
             ? this.photoUrls
