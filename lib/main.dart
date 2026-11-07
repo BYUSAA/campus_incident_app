@@ -25,7 +25,18 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => IncidentProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, IncidentProvider>(
+          create: (_) => IncidentProvider(),
+          update: (_, auth, incidents) {
+            final provider = incidents ?? IncidentProvider();
+            if (auth.isInitialized && auth.isAuthenticated) {
+              provider.watchForUser(auth.user);
+            } else {
+              provider.clear();
+            }
+            return provider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..load()),
       ],
       child: const MyApp(),
