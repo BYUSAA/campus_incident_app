@@ -87,13 +87,13 @@ The editable architecture diagram is stored at docs/architecture/architecture_di
 | photoUrls | string array | Image URL list for compatibility and future extension |
 | assignedTo | string or null | Optional staff assignment |
 
-The incident model supports imageUrl and older records containing a photoUrls array. A composite Firestore index supports the student query that filters on reportedBy and sorts by createdAt descending.
+The incident model supports imageUrl and older records containing a photoUrls array. Cloud Firestore stores the user profiles and incident documents, while a composite index supports the student query that filters on reportedBy and sorts by createdAt descending [4].
 
 ## 5. Authentication, roles, and security
 
 Firebase Authentication is used for email/password registration and sign-in [3]. Registration validates the ALU email domain, creates the account with a student role, and sends a verification message. The login workflow refreshes the Firebase user and rejects accounts whose email is not verified.
 
-The router directs signed-out users to Login, unverified users to email verification, and verified staff users to the staff dashboard. These route guards improve navigation, but they are not the security boundary. Firestore and Storage security rules enforce authorization on backend requests [5], [6].
+The router directs signed-out users to Login, unverified users to email verification, and verified staff users to the staff dashboard. These route guards, implemented with go_router [8], improve navigation, but they are not the security boundary. Firestore and Storage security rules enforce authorization on backend requests [5], [6].
 
 ### 5.1 Firestore authorization
 
