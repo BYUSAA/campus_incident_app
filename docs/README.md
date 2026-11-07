@@ -1,6 +1,6 @@
 # Project documentation
 
-This folder contains the technical explanation, report PDF draft, and submission evidence plan for Individual Assignment 2.
+This folder contains the technical explanation and submission evidence plan for Individual Assignment 2.
 
 ## Contents
 
