@@ -10,6 +10,7 @@ import '../../features/incidents/screens/edit_incident_screen.dart';
 import '../../features/incidents/screens/incident_details_screen.dart';
 import '../../features/incidents/screens/incident_list_screen.dart';
 import '../../features/incidents/screens/my_incidents_screen.dart';
+import '../../features/profile/screens/profile_recovery_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import '../../features/staff/screens/manage_incident_screen.dart';
@@ -24,6 +25,7 @@ class AppRouter {
   static const login = '/login';
   static const register = '/register';
   static const verifyEmail = '/verify-email';
+  static const profileRecovery = '/account-recovery';
   static const home = '/home';
   static const incidents = '/incidents';
   static const myIncidents = '/my-incidents';
@@ -40,6 +42,9 @@ class AppRouter {
       refreshListenable: auth,
       redirect: (context, state) {
         final path = state.matchedLocation;
+
+        // Do not expose protected pages until the current auth session and
+        // its application profile have both been resolved.
         if (!auth.isInitialized) {
           return path == '/splash' ? null : '/splash';
         }
@@ -53,13 +58,31 @@ class AppRouter {
           return path == verifyEmail ? null : verifyEmail;
         }
 
-        if (path == '/splash' || path == login || path == register || path == verifyEmail) {
-          return auth.user?.role == 'staff' ? staffDashboard : home;
+        final appUser = auth.user;
+        if (appUser == null) {
+          return path == profileRecovery ? null : profileRecovery;
         }
 
-        if ((path == staffDashboard || path == manageIncident) &&
-            auth.user?.role != 'staff') {
-          return home;
+        final isStaff = appUser.isStaff;
+        if (isStaff) {
+          if (path == '/splash' ||
+              path == login ||
+              path == register ||
+              path == verifyEmail ||
+              path == home) {
+            return staffDashboard;
+          }
+        } else {
+          if (path == staffDashboard || path == manageIncident) {
+            return home;
+          }
+          if (path == '/splash' ||
+              path == login ||
+              path == register ||
+              path == verifyEmail ||
+              path == profileRecovery) {
+            return home;
+          }
         }
         return null;
       },
@@ -83,6 +106,10 @@ class AppRouter {
         GoRoute(
           path: verifyEmail,
           builder: (context, state) => const VerifyEmailScreen(),
+        ),
+        GoRoute(
+          path: profileRecovery,
+          builder: (context, state) => const ProfileRecoveryScreen(),
         ),
         ShellRoute(
           builder: (context, state, child) {
@@ -114,7 +141,9 @@ class AppRouter {
             final incident = state.extra;
             return incident is Incident
                 ? EditIncidentScreen(incident: incident)
-                : const _InvalidRouteScreen(message: 'The incident to edit was not provided.');
+                : const _InvalidRouteScreen(
+                    message: 'The incident to edit was not provided.',
+                  );
           },
         ),
         GoRoute(
@@ -123,7 +152,9 @@ class AppRouter {
             final incident = state.extra;
             return incident is Incident
                 ? IncidentDetailsScreen(incident: incident)
-                : const _InvalidRouteScreen(message: 'The incident details were not provided.');
+                : const _InvalidRouteScreen(
+                    message: 'The incident details were not provided.',
+                  );
           },
         ),
         GoRoute(
@@ -136,7 +167,9 @@ class AppRouter {
             final incident = state.extra;
             return incident is Incident
                 ? ManageIncidentScreen(incident: incident)
-                : const _InvalidRouteScreen(message: 'The incident to manage was not provided.');
+                : const _InvalidRouteScreen(
+                    message: 'The incident to manage was not provided.',
+                  );
           },
         ),
       ],
