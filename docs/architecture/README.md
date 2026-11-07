@@ -34,7 +34,7 @@ Login/Register screens
  Firebase       users/{uid}
 ```
 
-The authentication provider listens for Firebase Auth state changes. A monotonically increasing event version prevents an older profile request from restoring a previous user after sign-out or a later Auth event. Protected routes remain in the splash state until profile loading completes.
+The authentication provider listens for Firebase Auth state changes. A monotonically increasing event version prevents an older profile request from restoring a previous user after sign-out or a later Auth event. Registration invalidates the initial account-created event before reloading the created profile. Email verification forces a fresh Firebase ID token so Firestore and Storage rules receive the updated `email_verified` claim. Protected routes remain in the splash state until profile loading completes.
 
 ## Incident submission
 
@@ -54,13 +54,13 @@ StorageService    FirestoreService
 Firebase Storage   Cloud Firestore
 ```
 
-The optional photo is uploaded under `incident_photos/{uid}/`. Its URL and report metadata are saved in the incident document. If Firestore creation fails, the repository attempts to remove the uploaded object. After a report is deleted, photo cleanup is attempted and logged separately so a temporary Storage failure does not falsely report that the Firestore deletion itself failed.
+The optional photo is uploaded under `incident_photos/{uid}/`. Its URL and report metadata are saved in the incident document. Edit forms preview existing photos and support replacing/removing them. If a Firestore create/update fails, the repository attempts to remove the newly uploaded object. After a report is deleted, photo cleanup is attempted and logged separately so a temporary Storage failure does not falsely report that the Firestore deletion itself failed.
 
 ## Live updates and staff moderation
 
 Firestore snapshot streams are mapped to `Incident` objects by the repository. The provider subscribes, notifies listening screens when new data arrives, clears prior user data when switching feeds, ignores events from superseded subscriptions, and cancels the active subscription when disposed.
 
-Staff status progression is forward-only: `Submitted` → `In Progress` → `Resolved`. The status control and repository validate transitions for usability; Firestore rules remain the authoritative backend restriction.
+Staff status progression is forward-only: `Submitted` → `In Progress` → `Resolved`. The management screen stays open after a successful update so staff can complete both transitions in one visit. The status control and repository validate transitions for usability; Firestore rules remain the authoritative backend restriction.
 
 Student reads are scoped to report ownership. Student edits and deletes are allowed only while the report remains `Submitted`. Staff access uses the trusted role stored in `users/{uid}`. Firestore and Storage rules enforce authorization independently of the router.
 
