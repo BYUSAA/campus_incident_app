@@ -169,12 +169,15 @@ class AuthProvider extends ChangeNotifier {
     _isInitialized = false;
     notifyListeners();
     try {
-      _user = await _repository.loadProfile(current.uid);
-      if (_user == null) {
+      final profile = await _repository.loadProfile(current.uid);
+      if (version != _authStateVersion) return;
+      _user = profile;
+      if (profile == null) {
         _profileError =
             'Your profile record is missing. Ask an administrator to restore your account role.';
       }
     } catch (error) {
+      if (version != _authStateVersion) return;
       _user = null;
       _profileError = 'Could not load your profile: $error';
     } finally {
