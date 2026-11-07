@@ -80,7 +80,9 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final incident = widget.incident;
+    final incident =
+        context.watch<IncidentProvider>().findById(widget.incident.id) ??
+            widget.incident;
     final imageUrl = incident.imageUrl ??
         (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
     final isBusy = _isUpdating || _isDeleting;
