@@ -8,6 +8,8 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode _mode = ThemeMode.system;
   bool _isLoaded = false;
+  bool _userChangedMode = false;
+  Future<void> _saveQueue = Future<void>.value();
 
   ThemeMode get themeMode => _mode;
   bool get isDark => _mode == ThemeMode.dark;
@@ -16,14 +18,16 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> load() async {
     try {
       final preferences = await SharedPreferences.getInstance();
-      _mode = switch (preferences.getString(_preferenceKey)) {
+      final savedMode = switch (preferences.getString(_preferenceKey)) {
         'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
         _ => ThemeMode.system,
       };
+      // Do not let a late disk read undo a change made while loading.
+      if (!_userChangedMode) _mode = savedMode;
     } catch (_) {
       // The system theme remains a safe fallback if local storage is unavailable.
-      _mode = ThemeMode.system;
+      if (!_userChangedMode) _mode = ThemeMode.system;
     } finally {
       _isLoaded = true;
       notifyListeners();
@@ -33,9 +37,14 @@ class ThemeProvider extends ChangeNotifier {
   void toggle(bool value) {
     final nextMode = value ? ThemeMode.dark : ThemeMode.light;
     if (_mode == nextMode) return;
+    _userChangedMode = true;
     _mode = nextMode;
     notifyListeners();
-    unawaited(_save(nextMode));
+
+    // Serialize preference writes so a slower older write cannot overwrite
+    // the user's most recent theme selection.
+    _saveQueue = _saveQueue.then((_) => _save(nextMode));
+    unawaited(_saveQueue);
   }
 
   Future<void> _save(ThemeMode mode) async {
