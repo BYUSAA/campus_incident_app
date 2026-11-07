@@ -32,13 +32,17 @@ void main() {
     });
 
     test('rejects incident field values longer than backend limits', () {
-      expect(Validators.validateTitle('t' * 101), contains('100 characters'));
+      final overlongTitle = List<String>.filled(101, 't').join();
+      final overlongDescription = List<String>.filled(1001, 'd').join();
+      final overlongLocation = List<String>.filled(161, 'l').join();
+
+      expect(Validators.validateTitle(overlongTitle), contains('100 characters'));
       expect(
-        Validators.validateDescription('d' * 1001),
+        Validators.validateDescription(overlongDescription),
         contains('1000 characters'),
       );
       expect(
-        Validators.validateLocation('l' * 161),
+        Validators.validateLocation(overlongLocation),
         contains('160 characters'),
       );
     });
