@@ -76,7 +76,7 @@ try {
     Write-Host "`nALL AVAILABLE CHECKS PASSED." -ForegroundColor Green
     Write-Host 'APK: build/app/outputs/flutter-apk/app-debug.apk'
     Write-Host 'Coverage: coverage/lcov.info'
-    Write-Host 'Commit pubspec.lock after reviewing the dependency resolution.'
+    Write-Host 'Commit pubspec.lock and firebase/rules-tests/package-lock.json after reviewing dependency resolution.'
 }
 finally {
     Pop-Location
