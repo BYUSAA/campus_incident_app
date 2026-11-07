@@ -132,7 +132,7 @@ class IncidentDetailsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text('Status progress', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 14),
-            _timeline(),
+            _timeline(liveIncident.status),
           ],
         ),
       ),
@@ -170,10 +170,10 @@ class IncidentDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _timeline() {
-    final currentStep = liveIncident.status == 'Resolved'
+  Widget _timeline(String status) {
+    final currentStep = status == 'Resolved'
         ? 2
-        : liveIncident.status == 'In Progress'
+        : status == 'In Progress'
             ? 1
             : 0;
     const steps = ['Submitted', 'In Progress', 'Resolved'];
