@@ -151,7 +151,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\tooling\verify-project.ps1
 ```
 
-This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when an Android device is connected. It stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` afterward.
+This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when an Android device is connected. It stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` and `firebase/rules-tests/package-lock.json` afterward.
 
 The assignment requires Android or iOS runtime evidence. A browser-only run does not replace the Android emulator or physical-device demonstration.
 
