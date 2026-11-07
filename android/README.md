@@ -12,7 +12,7 @@ From the repository root in PowerShell:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\tooling\bootstrap-android.ps1
+.\tooling\prepare-android-firebase.ps1 -FirebaseProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
 The script:
