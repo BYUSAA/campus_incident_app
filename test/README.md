@@ -16,7 +16,9 @@ flutter test
 | `core/validators_test.dart` | ALU email format/domain, profile name, password, and bounded report fields |
 | `core/incident_status_test.dart` | Forward-only status progression |
 | `models/incident_test.dart` | Firestore mapping, defaults, timestamp conversion, and image compatibility |
-| `providers/incident_provider_test.dart` | Student/staff feeds, user switching, report submission, status/delete delegation |
+| `providers/incident_provider_test.dart` | Student/staff feeds, user switching, report submission, photo removal, status/delete delegation |
+| `providers/theme_provider_test.dart` | System fallback, restoring saved appearance, and persisting a change |
+| `widgets/photo_picker_test.dart` | Removing a previously uploaded photo |
 | `widgets/incident_form_test.dart` | Required incident fields are validated before submit |
 | `widgets/incident_card_test.dart` | Incident title and status rendering |
 
@@ -33,7 +35,7 @@ cd ../..
 firebase emulators:exec --project demo-campus-incident-reporter --only firestore,storage "npm --prefix firebase/rules-tests test"
 ```
 
-The suite checks student ownership, role self-promotion, verification, report lifecycle, status progression, image folder ownership, MIME type, file size, and staff photo cleanup.
+The suite checks student ownership, profile privacy/protected fields, role self-promotion, verification, report lifecycle, student and staff delete permissions, status progression, image folder ownership, MIME type, file size, and staff photo cleanup.
 
 ## Android device smoke test
 
