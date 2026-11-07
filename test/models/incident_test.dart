@@ -33,6 +33,58 @@ void main() {
       expect(incident.createdAt, DateTime.fromMillisecondsSinceEpoch(0));
     });
 
+    test('ignores malformed optional values instead of crashing', () {
+      final incident = Incident.fromMap('report-malformed', {
+        'title': 42,
+        'description': null,
+        'category': false,
+        'location': ['not', 'a', 'string'],
+        'status': 9,
+        'reportedBy': null,
+        'imageUrl': 12,
+        'photoUrls': ['https://example.test/photo.jpg', 5, null],
+        'reporterName': true,
+        'assignedTo': {},
+        'createdAt': 'not-a-timestamp',
+      });
+
+      expect(incident.title, isEmpty);
+      expect(incident.category, 'Other');
+      expect(incident.status, 'Submitted');
+      expect(incident.imageUrl, 'https://example.test/photo.jpg');
+      expect(incident.photoUrls, ['https://example.test/photo.jpg']);
+      expect(incident.reporterName, isNull);
+      expect(incident.assignedTo, isNull);
+    });
+
+    test('copyWith can explicitly clear a photo and staff assignment', () {
+      final original = Incident(
+        id: 'report-4',
+        title: 'Broken light',
+        description: 'The light does not turn on.',
+        category: 'Electricity',
+        location: 'Block A',
+        status: 'Submitted',
+        imageUrl: 'https://example.test/photo.jpg',
+        photoUrls: ['https://example.test/photo.jpg'],
+        reportedBy: 'student-1',
+        reporterName: 'Test Student',
+        assignedTo: 'staff-1',
+        createdAt: DateTime(2026, 11, 6),
+      );
+
+      final updated = original.copyWith(
+        imageUrl: null,
+        assignedTo: null,
+      );
+
+      expect(updated.imageUrl, isNull);
+      expect(updated.photoUrls, isEmpty);
+      expect(updated.assignedTo, isNull);
+      expect(updated.reportedBy, original.reportedBy);
+      expect(updated.createdAt, original.createdAt);
+    });
+
     test('serializes the fields used by Firestore rules', () {
       final incident = Incident(
         id: 'report-3',
