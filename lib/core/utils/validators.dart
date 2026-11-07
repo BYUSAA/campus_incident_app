@@ -5,7 +5,7 @@ class Validators {
     final email = value?.trim().toLowerCase() ?? '';
     if (email.isEmpty) return 'Email is required';
     if (email.length > 254 ||
-        !RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)) {
+        !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
       return 'Enter a valid email address';
     }
     if (!email.endsWith(AppConstants.aluStudentDomain)) {
