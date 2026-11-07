@@ -4,6 +4,7 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 
 **Primary platform:** Android
 **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
+**FlutterFire release set:** Firebase Flutter BoM 4.20.2
 **State management:** Provider (`ChangeNotifier`)
 **Navigation:** `go_router`
 **Workflow:** Submitted → In Progress → Resolved
@@ -91,9 +92,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\tooling\bootstrap-android.ps1
 ```
 
-The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 for the current Firebase Android SDK, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
+The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 required by `image_picker` 1.2.4, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
 
-If you generate the Android runner manually instead of using the script, set `minSdk = 24` in `android/app/build.gradle.kts` (or `minSdkVersion 24` in Groovy Gradle) before building. Firebase Android SDK 35 requires API 24 or newer.
+If you generate the Android runner manually instead of using the script, set `minSdk = 24` in `android/app/build.gradle.kts` (or `minSdkVersion 24` in Groovy Gradle) before building. `image_picker` 1.2.4 requires Android API 24 or newer.
 
 ## 3. Configure Firebase
 
