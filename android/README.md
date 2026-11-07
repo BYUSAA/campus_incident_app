@@ -11,8 +11,6 @@ The native Flutter Android project is committed in this directory. It includes t
 - Minimum Android SDK: API 24
 - Entry point: `app/src/main/kotlin/com/byusa/campus_incident_reporter/MainActivity.kt`
 
-The repository workflow `.github/workflows/bootstrap-android.yml` can generate and commit the runner when this directory is missing the Android manifest. The workflow preserves this README.
-
 ## Run on Android
 
 From the repository root in PowerShell:
