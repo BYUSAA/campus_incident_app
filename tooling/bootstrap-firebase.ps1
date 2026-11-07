@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string]$ProjectId
+    [string]$ProjectId,
+    [switch]$RequireDeployment
 )
 
 $ErrorActionPreference = 'Stop'
@@ -85,6 +86,9 @@ try {
         Write-Host 'Firebase rules and indexes deployed.' -ForegroundColor Green
     }
     else {
+        if ($RequireDeployment) {
+            throw 'Rules deployment was declined. The full preparation script stops because the live app would not be authorized to use Firebase.'
+        }
         Write-Host 'Deployment skipped. Review the rules, then deploy explicitly when ready.'
     }
 
