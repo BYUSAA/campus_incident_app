@@ -21,23 +21,35 @@ class StorageService {
       }
 
       final extension = file.path.split('.').last.toLowerCase();
-      final safeExtension = const ['jpg', 'jpeg', 'png', 'webp'].contains(extension)
-          ? extension
-          : 'jpg';
-      final contentType = safeExtension == 'png'
-          ? 'image/png'
-          : safeExtension == 'webp'
-              ? 'image/webp'
-              : 'image/jpeg';
-      final fileName = '${DateTime.now().microsecondsSinceEpoch}.$safeExtension';
-      final reference = _storage.ref().child('incident_photos').child(uid).child(fileName);
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+      if (!allowedExtensions.contains(extension)) {
+        throw StorageException(
+          'Use a JPG, PNG, or WEBP image. HEIC and other formats are not supported.',
+        );
+      }
+
+      final contentType = switch (extension) {
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        _ => 'image/jpeg',
+      };
+      final fileName = '${DateTime.now().microsecondsSinceEpoch}.$extension';
+      final reference = _storage
+          .ref()
+          .child('incident_photos')
+          .child(uid)
+          .child(fileName);
       final task = await reference.putFile(
         file,
         SettableMetadata(contentType: contentType),
       );
-      return task.ref.getDownloadURL();
+      return await task.ref.getDownloadURL();
     } on StorageException {
       rethrow;
+    } on FirebaseException catch (error) {
+      throw StorageException(
+        'Firebase Storage could not upload this photo: ${error.message ?? error.code}',
+      );
     } catch (error) {
       throw StorageException('Could not upload the incident photo: $error');
     }
