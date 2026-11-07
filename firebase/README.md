@@ -4,6 +4,9 @@ This folder contains the Firebase rules, Firestore index, and automated emulator
 
 ## Firebase products
 
+The Flutter dependencies use the coordinated FlutterFire BoM 4.20.2 release set: `firebase_core` 4.15.2, `firebase_auth` 6.7.1, `cloud_firestore` 6.10.2, and `firebase_storage` 13.6.1. The project also uses `image_picker` 1.2.4, which requires Android API 24 or newer.
+
+
 - **Authentication:** Email/Password accounts and verification.
 - **Cloud Firestore:** user profiles at `users/{uid}` and incident records at `incidents/{incidentId}`.
 - **Cloud Storage:** optional photos at `incident_photos/{uid}/{fileName}`.
