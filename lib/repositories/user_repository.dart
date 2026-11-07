@@ -20,8 +20,4 @@ class UserRepository {
     final data = await _firestore.getUser(uid);
     return data == null ? null : AppUser.fromMap(data);
   }
-
-  Future<void> updateEmailVerification(String uid, bool value) {
-    return _firestore.saveUser(uid, {'emailVerified': value});
-  }
 }
