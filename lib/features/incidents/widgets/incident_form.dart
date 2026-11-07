@@ -108,6 +108,8 @@ class _IncidentFormState extends State<IncidentForm> {
     String hint,
     TextEditingController controller, {
     int maxLines = 1,
+    required int maxLength,
+    required String? Function(String?) validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,8 +119,9 @@ class _IncidentFormState extends State<IncidentForm> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          maxLength: maxLength,
           textCapitalization: TextCapitalization.sentences,
-          validator: (value) => Validators.validateRequired(value, label),
+          validator: validator,
           decoration: InputDecoration(hintText: hint),
         ),
       ],
@@ -142,19 +145,29 @@ class _IncidentFormState extends State<IncidentForm> {
             onChanged: (value) => setState(() => _selectedCategory = value),
           ),
           const SizedBox(height: 24),
-          _textField('Title', 'Briefly describe the issue…', _titleController),
+          _textField(
+            'Title',
+            'Briefly describe the issue…',
+            _titleController,
+            maxLength: 100,
+            validator: Validators.validateTitle,
+          ),
           const SizedBox(height: 16),
           _textField(
             'Description',
             'Provide the details someone needs to respond…',
             _descriptionController,
             maxLines: 4,
+            maxLength: 1000,
+            validator: Validators.validateDescription,
           ),
           const SizedBox(height: 16),
           _textField(
             'Location',
             'For example: Block B, Room 204',
             _locationController,
+            maxLength: 160,
+            validator: Validators.validateLocation,
           ),
           const SizedBox(height: 24),
           const Text(
