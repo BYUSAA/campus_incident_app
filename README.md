@@ -88,7 +88,7 @@ The Git repository contains Android setup guidance rather than generated Gradle/
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\tooling\bootstrap-android.ps1
+.\tooling\prepare-android-firebase.ps1 -FirebaseProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
 The script generates the runner only if it is missing, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
@@ -109,8 +109,10 @@ In Firebase Console, register the Android application ID and enable:
 Then run from the repository root using your actual Firebase project ID:
 
 ```powershell
-.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
+.\tooling\prepare-android-firebase.ps1 -FirebaseProjectId YOUR_FIREBASE_PROJECT_ID
 ```
+
+This prepares Android, generates Firebase options, asks before deployment, runs Flutter and Firebase emulator checks, and builds the Android debug APK. See [tooling documentation](tooling/README.md) for the individual commands and the optional emulator-test skip switch.
 
 The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It asks you to type `YES` before deploying any backend rules.
 
