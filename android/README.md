@@ -4,7 +4,7 @@ Android is the primary runtime target for Campus Incident Reporter and the requi
 
 ## Generated Android runner
 
-The native Flutter Android project is generated with Flutter 3.47.2 and committed in this directory. It includes the Gradle settings and wrapper, application module, Android manifest, and Kotlin MainActivity.
+The native Flutter Android project is committed in this directory. It includes the application module, Android manifest, Kotlin MainActivity, Gradle project settings, and Gradle wrapper distribution configuration. Flutter's own Android tooling injects the wrapper launch scripts when a Flutter build is invoked.
 
 - Android application ID: `com.byusa.campus_incident_reporter`
 - Kotlin namespace: `com.byusa.campus_incident_reporter`
