@@ -18,6 +18,21 @@ void main() {
       expect(Validators.validateRequired('  ', 'Title'), 'Title is required');
     });
 
+    test('accepts a valid name within the profile limit', () {
+      expect(Validators.validateName('Byusa Martin'), isNull);
+    });
+
+    test('rejects a blank or overlong name', () {
+      expect(Validators.validateName(' '), 'Name is required');
+      final name = List<String>.filled(81, 'n').join();
+      expect(Validators.validateName(name), contains('80 characters'));
+    });
+
+    test('rejects malformed ALU email values', () {
+      expect(Validators.validateEmail('not-an-email@alustudent.com'), 'Enter a valid email address');
+      expect(Validators.validateEmail('student @alustudent.com'), 'Enter a valid email address');
+    });
+
     test('rejects a short password', () {
       expect(
         Validators.validatePassword('123'),
