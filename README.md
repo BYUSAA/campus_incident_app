@@ -93,11 +93,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 for the current Firebase Android SDK, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
 
-The direct Flutter command is:
-
-```powershell
-flutter create --platforms=android --org com.byusa .
-```
+If you generate the Android runner manually instead of using the script, set `minSdk = 24` in `android/app/build.gradle.kts` (or `minSdkVersion 24` in Groovy Gradle) before building. Firebase Android SDK 35 requires API 24 or newer.
 
 ## 3. Configure Firebase
 
@@ -147,6 +143,15 @@ flutter build apk --debug
 flutter devices
 flutter run
 ```
+
+For a single local verification run after setup, use:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\tooling\verify-project.ps1
+```
+
+This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when an Android device is connected. It stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` afterward.
 
 The assignment requires Android or iOS runtime evidence. A browser-only run does not replace the Android emulator or physical-device demonstration.
 
