@@ -76,8 +76,9 @@ service cloud.firestore {
           'uid', 'name', 'email', 'role', 'emailVerified', 'createdAt'
         ]);
 
-      allow read: if aluAccount()
-        && (request.auth.uid == uid || staff());
+      // A user can read only their own profile. Staff role checks use
+      // server-side rule lookups and do not need collection-wide profile reads.
+      allow read: if aluAccount() && request.auth.uid == uid;
 
       // A client may edit the display name, but cannot change role, email,
       // verification metadata, or any other protected profile fields.
