@@ -4,7 +4,7 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 
 **Primary platform:** Android
 **Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
-**FlutterFire release set:** Firebase Flutter BoM 4.20.2
+**FlutterFire release set:** Firebase Flutter BoM 5.1.0
 **State management:** Provider (`ChangeNotifier`)
 **Navigation:** `go_router`
 **Workflow:** Submitted → In Progress → Resolved
