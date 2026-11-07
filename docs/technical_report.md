@@ -111,7 +111,7 @@ The rules enforce the following behavior:
 
 ### 5.2 Storage authorization
 
-Incident photographs are stored under incident_photos/{uid}/{fileName}. The rules restrict upload and update to the signed-in owner, require supported image content types, and enforce a file size greater than zero and below 8 MB. The owner and authorized staff can read the image; staff may also delete photo evidence when moderating a report. Storage rules are separate from the Flutter interface and must be deployed to the same Firebase project as the Firestore staff-role documents.
+Incident photographs are stored under incident_photos/{uid}/{fileName}. The rules restrict upload and update to the signed-in owner, require supported image content types, and enforce a file size greater than zero and below 8 MB. The owner and authorized staff can read the image; staff may also delete photo evidence when moderating a report. Storage rules are separate from the Flutter interface and must be deployed to the same Firebase project as the Firestore staff-role documents. The rules use Firebase's cross-service Firestore lookup feature; the project administrator must approve the required Storage-to-Firestore permission when prompted. Such lookups consume Firestore document access and are restricted by the Storage Rules access-call limit [10].
 
 ### 5.3 Administrative setup
 
@@ -219,3 +219,7 @@ The recording must show student registration and verification, login, incident c
 [7] “provider: A wrapper around InheritedWidget to make them easier to use and more reusable,” pub.dev. [Online]. Available: https://pub.dev/packages/provider. [Accessed: Nov. 7, 2026].
 
 [8] “go_router: A declarative router for Flutter,” pub.dev. [Online]. Available: https://pub.dev/packages/go_router. [Accessed: Nov. 7, 2026].
+
+[9] Google, “Build unit tests for Firebase Security Rules.” [Online]. Available: https://firebase.google.com/docs/rules/unit-tests. [Accessed: Nov. 7, 2026].
+
+[10] Google, “Use conditions in Cloud Storage Security Rules.” [Online]. Available: https://firebase.google.com/docs/storage/security/rules-conditions. [Accessed: Nov. 7, 2026].
