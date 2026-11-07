@@ -113,14 +113,8 @@ void main() {
       expect(route(path: AppRouter.home), isNull);
       expect(route(path: AppRouter.createIncident), isNull);
       expect(route(path: AppRouter.incidents), isNull);
-      expect(
-        route(path: AppRouter.staffDashboard),
-        AppRouter.home,
-      );
-      expect(
-        route(path: AppRouter.manageIncident),
-        AppRouter.home,
-      );
+      expect(route(path: AppRouter.staffDashboard), AppRouter.home);
+      expect(route(path: AppRouter.manageIncident), AppRouter.home);
     });
 
     test('limits staff to the review dashboard and incident management', () {
