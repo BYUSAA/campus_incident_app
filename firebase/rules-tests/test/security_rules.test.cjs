@@ -75,6 +75,20 @@ describe('Campus Incident Reporter Firebase security rules', function () {
         role: 'staff',
         emailVerified: true,
       });
+      await setDoc(doc(context.firestore(), 'users', 'student-1'), {
+        uid: 'student-1',
+        name: 'Student One',
+        email: validEmail('student-1'),
+        role: 'student',
+        emailVerified: true,
+      });
+      await setDoc(doc(context.firestore(), 'users', 'student-2'), {
+        uid: 'student-2',
+        name: 'Student Two',
+        email: validEmail('student-2'),
+        role: 'student',
+        emailVerified: true,
+      });
 
       await setDoc(
         doc(context.firestore(), 'incidents', 'submitted-report'),
@@ -139,6 +153,16 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       await assertFails(
         updateDoc(doc(db, 'users', 'student-1'), { role: 'staff' }),
       );
+    });
+
+    it('keeps student profile documents private from other users and staff', async function () {
+      const studentDb = student().firestore();
+      const staffDb = staff().firestore();
+
+      await assertSucceeds(getDoc(doc(studentDb, 'users', 'student-1')));
+      await assertFails(getDoc(doc(studentDb, 'users', 'student-2')));
+      await assertSucceeds(getDoc(doc(staffDb, 'users', 'staff-1')));
+      await assertFails(getDoc(doc(staffDb, 'users', 'student-1')));
     });
 
     it('allows students to read their own report, not another student report', async function () {
