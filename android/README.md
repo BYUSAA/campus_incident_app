@@ -1,54 +1,64 @@
 # Android platform setup
 
-Android is the primary target for development, functional testing, and the final mobile demonstration.
+Android is the primary development, test, and assignment-demonstration target.
 
-## Repository state
+## Current repository state
 
-This folder currently contains setup guidance rather than generated Android Gradle, manifest, and Kotlin runner files. Generate native files with the Flutter SDK installed on the developer's computer.
+The repository contains setup guidance rather than generated Android Gradle, manifest, and Kotlin runner files. Generate the native runner using Flutter on the Windows development computer.
 
-## Generate the Android project
+## Generate the Android runner
 
-From the repository root:
+From the repository root in PowerShell:
 
 ```powershell
-flutter doctor
-flutter create --platforms=android .
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\tooling\bootstrap-android.ps1
 ```
 
-Review the Git diff after generation. Confirm the Android application ID in the generated Gradle configuration; use that exact ID when registering the Android app in Firebase Console.
+The script:
+- Checks Flutter and displays `flutter doctor -v`.
+- Generates Android runner files only if the runner is missing.
+- Uses organization prefix `com.byusa`.
+- Installs Flutter dependencies.
+- Prints the generated Android application ID.
 
-## Firebase setup
+For the current package name, the expected application ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` and register that exact ID in Firebase Console.
 
-1. Register the generated Android application ID in the Firebase project.
-2. Enable Email/Password Authentication, Cloud Firestore, and Firebase Storage.
-3. From the project root, run:
-
-   ```powershell
-   flutterfire configure --platforms=android
-   ```
-
-4. Confirm that the command generated `lib/firebase_options.dart`.
-5. Deploy the repository Firestore and Storage rules/indexes.
-
-## Run on Android
+Direct commands:
 
 ```powershell
+flutter doctor -v
+flutter create --platforms=android --org com.byusa .
 flutter pub get
+```
+
+Review generated platform files before committing them. Preserve local SDK paths and signing configuration outside source control.
+
+## Configure Firebase
+
+Enable Email/Password Authentication, Cloud Firestore, and Cloud Storage. Then run:
+
+```powershell
+.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
+```
+
+This generates `lib/firebase_options.dart` for Android and asks before deploying Firestore rules/indexes and Storage rules. See [Firebase setup](../firebase/README.md).
+
+## Run and build
+
+```powershell
 flutter devices
 flutter run
-```
-
-Build a debug APK:
-
-```powershell
 flutter build apk --debug
 ```
 
-Test both gallery selection and camera capture on the actual Android target. Emulator camera behavior depends on the selected virtual device.
+Test gallery selection and camera capture on the actual Android target. Use an emulator image with Google Play services for Firebase-related device testing.
 
-## Android security notes
+## Security and evidence
 
 - Never commit keystore files, signing passwords, private signing keys, service account JSON, or local SDK paths.
-- Confirm the application ID and Firebase project before preparing a release build.
-- Demonstrate the app against the Firebase project documented in the report.
-- Obscure emails, UIDs, credentials, and other private information in screenshots/video.
+- Confirm the application ID and Firebase project before deploying.
+- Use dedicated test accounts and obscure personal information in evidence.
+- Record actual build/test results in the technical report.
+
+The GitHub Actions workflow generates a temporary Android runner in CI and builds a debug APK artifact. The developer's local runner still needs to be generated for the device demonstration.
