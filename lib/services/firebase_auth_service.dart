@@ -1,7 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseAuthService {
-  FirebaseAuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  FirebaseAuthService({FirebaseAuth? auth})
+      : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
 
@@ -33,6 +34,12 @@ class FirebaseAuthService {
     if (!user.emailVerified) {
       await user.sendEmailVerification();
     }
+  }
+
+  Future<void> sendPasswordResetEmail(String email) {
+    return _auth.sendPasswordResetEmail(
+      email: email.trim().toLowerCase(),
+    );
   }
 
   Future<void> reloadUser() async {

@@ -22,13 +22,13 @@ The application was developed with Flutter, a framework for building mobile inte
 
 ### 2.1 Student
 
-A student account is created with an @alustudent.com email address. The student must verify the email before accessing incident functionality. Students can submit incidents, attach an optional photograph, view and search their own reports, filter by status, inspect report details, and edit or delete their own reports while the status remains **Submitted**.
+A student account is created with an @alustudent.com email address. The student must verify the email before accessing incident functionality. Students can submit incidents, attach an optional photograph, view and search their own reports, filter by status, inspect report details, and edit or delete their own reports while the status remains **Submitted**. They can replace or remove an attached photograph while editing, update their display name, reset a forgotten password, and save a light/dark appearance preference on the device.
 
 The student feed is intentionally limited to the signed-in student's reports. This is a privacy decision: the application does not expose other students' submissions to every student account.
 
 ### 2.2 Authorized staff
 
-Staff use a separate verified ALU account. A trusted Firebase administrator must assign the staff role in the corresponding users/{uid} document. Staff can view the campus incident queue, inspect submitted details, and update report status to **Submitted**, **In Progress**, or **Resolved**.
+Staff use a separate verified ALU account. A trusted Firebase administrator must assign the staff role in the corresponding users/{uid} document. Staff can view the campus incident queue, inspect report details, progress a report from **Submitted** to **In Progress** and then **Resolved**, and delete reports with best-effort photo cleanup.
 
 There is no in-app role switch. A student cannot grant themselves staff access through the client.
 
@@ -121,9 +121,9 @@ A Firebase administrator must deploy the checked-in rules and indexes to the cor
 
 The project uses Provider with ChangeNotifier, a supported approach for exposing application state to Flutter widgets [7].
 
-- AuthProvider exposes the Firebase user, application profile, loading state, and authentication initialization state. It listens for authentication changes.
-- IncidentProvider manages a Firestore stream subscription for the current student's reports or the staff incident queue. It exposes the current list, loading state, and error state, and cancels the previous subscription when switching streams or disposing.
-- ThemeProvider exposes the current light/dark appearance for the active app session.
+- AuthProvider exposes the Firebase user, application profile, loading state, and authentication initialization state. It listens for authentication changes, safely handles asynchronous profile loading, supports password reset, and allows a user to update their display name without changing protected account fields.
+- IncidentProvider manages a Firestore stream subscription for the current student's reports or the staff incident queue. It exposes the current list, loading state, and error state, clears stale data when the account/feed changes, and cancels the previous subscription when switching streams or disposing.
+- ThemeProvider restores and persists the light/dark appearance preference with local device storage; the system theme is used when no preference is saved.
 
 The separation between screen widgets and repositories keeps the Firebase query and persistence details outside the UI layer.
 
@@ -152,7 +152,7 @@ Use images from the real app and the student's Firebase project only. Hide email
 
 ## 8. Testing strategy and evidence
 
-The repository contains unit and widget tests for incident model mapping, email/name/report validation, forward-only status transitions, Provider feed switching and report actions using a fake repository, incident form required fields, and incident-card rendering. A Firebase Emulator Suite test package verifies Firestore and Storage permissions independently of the UI. An Android integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
+The repository contains unit and widget tests for incident model mapping, email/name/report validation, forward-only status transitions, Provider feed switching and report actions using a fake repository, incident form required fields, existing-photo removal, and theme preference restoration/persistence. A Firebase Emulator Suite test package verifies Firestore and Storage permissions independently of the UI. An Android integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
 
 Run these commands from the project root after Android and Firebase configuration:
 
@@ -180,19 +180,19 @@ The table below must be completed with actual results from the student's compute
 
 ### 8.2 Test limitations
 
-The current automated tests do not replace backend security testing. Additional tests should use the Firebase Emulator Suite to verify that a student cannot read or edit another student's report, cannot change a report status, and cannot promote themselves to staff. Storage emulator tests should check ownership, content type, and file size.
+The automated tests do not replace testing against the student's configured Firebase project. The Firebase Emulator Suite tests cover profile privacy and protected fields, report ownership and lifecycle, status progression, role self-promotion, staff deletion, and Storage ownership/type/size restrictions.
 
 ## 9. Challenges and design trade-offs
 
 The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
 
-The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. The theme preference currently lasts for the active app session rather than being stored across restarts. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
+The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
 ## 10. Lessons learned and future work
 
 The project demonstrates why client-side navigation checks and backend authorization must be treated separately. Provider stream subscriptions help keep screens in sync with Firestore changes, while repositories and service classes isolate persistence from presentation. Form validation should match backend constraints so that accepted UI input is also accepted by Firestore rules.
 
-The repository now includes Firebase Emulator Suite security tests for student ownership, role self-promotion, verification, status lifecycle, and photo access. Further improvements include paginated incident feeds, notifications when report status changes, persistent appearance preferences, and a trusted staff assignment interface.
+The repository includes Firebase Emulator Suite security tests for profile privacy and field protection, student ownership, role self-promotion, email verification, report lifecycle, status progression, staff deletion, and photo access. Further improvements include paginated incident feeds, notifications when report status changes, and a trusted staff assignment interface.
 
 ## 11. Project repository and demonstration video
 

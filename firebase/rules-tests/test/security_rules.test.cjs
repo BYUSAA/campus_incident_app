@@ -155,6 +155,22 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       );
     });
 
+    it('allows owners to change profile names but not protected profile fields', async function () {
+      const db = student().firestore();
+      await assertSucceeds(
+        updateDoc(doc(db, 'users', 'student-1'), {
+          name: 'Updated Student Name',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+      await assertFails(
+        updateDoc(doc(db, 'users', 'student-1'), {
+          emailVerified: false,
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    });
+
     it('keeps student profile documents private from other users and staff', async function () {
       const studentDb = student().firestore();
       const staffDb = staff().firestore();
@@ -290,6 +306,39 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       await assertSucceeds(
         updateDoc(doc(db, 'incidents', 'submitted-report'), {
           status: 'In Progress',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    });
+
+    it('does not allow staff to skip directly from Submitted to Resolved', async function () {
+      const db = staff().firestore();
+
+      await assertFails(
+        updateDoc(doc(db, 'incidents', 'submitted-report'), {
+          status: 'Resolved',
+          updatedAt: serverTimestamp(),
+        }),
+      );
+    });
+
+    it('allows staff to delete reports at any stage', async function () {
+      const db = staff().firestore();
+
+      await assertSucceeds(
+        deleteDoc(doc(db, 'incidents', 'in-progress-report')),
+      );
+      await assertSucceeds(
+        deleteDoc(doc(db, 'incidents', 'another-student-report')),
+      );
+    });
+
+    it('does not allow staff to edit the original student report content', async function () {
+      const db = staff().firestore();
+
+      await assertFails(
+        updateDoc(doc(db, 'incidents', 'submitted-report'), {
+          title: 'Changed by staff',
           updatedAt: serverTimestamp(),
         }),
       );

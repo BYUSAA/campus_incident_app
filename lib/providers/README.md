@@ -7,7 +7,8 @@ This folder contains application-wide state classes implemented with Flutter `Ch
 - Observes Firebase Authentication state through `AuthRepository`.
 - Exposes Firebase user and application profile.
 - Tracks initialization and loading/error state.
-- Supports registration, sign-in, email-verification refresh/resend, profile refresh, and logout.
+- Supports registration, sign-in, email-verification refresh/resend, password reset, profile-name updates, profile recovery, and logout.
+- Uses versioned asynchronous profile loading so stale requests cannot overwrite a newer session.
 - Notifies screens and the router when session state changes.
 
 ## IncidentProvider
@@ -21,7 +22,7 @@ This folder contains application-wide state classes implemented with Flutter `Ch
 
 - Exposes the selected `ThemeMode`.
 - Notifies the app when light/dark mode changes.
-- The current selection is held in memory and is not persisted between launches.
+- Loads and persists the selected appearance with SharedPreferences, using the system theme when no preference is saved.
 
 ## Guidelines
 

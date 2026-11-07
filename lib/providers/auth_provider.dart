@@ -12,7 +12,7 @@ class AuthProvider extends ChangeNotifier {
     _authSubscription = _repository.authStateChanges.listen(
       _handleAuthStateChanged,
       onError: (Object error) {
-        _errorMessage = error.toString();
+        _profileError = 'Could not resolve the signed-in account: $error';
         _isInitialized = true;
         notifyListeners();
       },
@@ -27,6 +27,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   String? _errorMessage;
+  String? _profileError;
   int _authStateVersion = 0;
 
   AppUser? get user => _user;
@@ -34,12 +35,16 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   bool get isEmailVerified => _firebaseUser?.emailVerified ?? false;
-  bool get isAuthenticated => _firebaseUser != null && isEmailVerified;
+  bool get isAuthenticated =>
+      _firebaseUser != null && isEmailVerified && _user != null;
   String? get errorMessage => _errorMessage;
+  String? get profileError => _profileError;
+  bool get hasProfileError => _profileError != null;
 
   Future<void> _handleAuthStateChanged(User? firebaseUser) async {
     final version = ++_authStateVersion;
     _firebaseUser = firebaseUser;
+    _profileError = null;
 
     if (firebaseUser == null) {
       _user = null;
@@ -57,11 +62,17 @@ class AuthProvider extends ChangeNotifier {
       final profile = await _repository.loadProfile(firebaseUser.uid);
       if (version != _authStateVersion) return;
       _user = profile;
+      if (profile == null) {
+        _profileError =
+            'Your Firebase account exists, but its campus profile is missing. '
+            'Ask the project administrator to restore the users/${firebaseUser.uid} record.';
+      }
       _errorMessage = null;
     } catch (error) {
       if (version != _authStateVersion) return;
       _user = null;
-      _errorMessage = error.toString();
+      _profileError =
+          'The application could not load your Firebase profile. Check your connection and retry. $error';
     } finally {
       if (version == _authStateVersion) {
         _isInitialized = true;
@@ -72,8 +83,19 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     await _runLoading(() async {
-      _user = await _repository.login(email, password);
-      _firebaseUser = _repository.currentUser;
+      final profile = await _repository.login(email, password);
+      final firebaseUser = _repository.currentUser;
+      if (firebaseUser == null) {
+        throw StateError('The signed-in Firebase session is no longer available.');
+      }
+
+      // Invalidate any profile read started by the auth-state stream so it
+      // cannot overwrite the profile returned by this completed login.
+      ++_authStateVersion;
+      _firebaseUser = firebaseUser;
+      _user = profile;
+      _profileError = null;
+      _isInitialized = true;
     });
   }
 
@@ -84,43 +106,124 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
-      _firebaseUser = _repository.currentUser;
-      if (_firebaseUser != null) {
-        _user = await _repository.loadProfile(_firebaseUser!.uid);
+      final firebaseUser = _repository.currentUser;
+      if (firebaseUser == null) {
+        throw StateError('Firebase did not keep the newly created session.');
       }
+
+      // Account creation emits an auth event before its Firestore profile is
+      // necessarily readable. Invalidate that early read and reload now that
+      // the repository has completed profile creation.
+      final version = ++_authStateVersion;
+      _firebaseUser = firebaseUser;
+      _isInitialized = false;
+      notifyListeners();
+
+      final profile = await _repository.loadProfile(firebaseUser.uid);
+      if (version != _authStateVersion) return;
+      if (profile == null) {
+        throw StateError(
+          'Your account was created, but its profile could not be loaded. '
+          'Please contact the project administrator.',
+        );
+      }
+      _user = profile;
+      _profileError = null;
+      _isInitialized = true;
     });
   }
 
   Future<bool> refreshVerification() async {
+    final version = ++_authStateVersion;
     final verified = await _repository.refreshVerification();
+    if (version != _authStateVersion) return false;
     _firebaseUser = _repository.currentUser;
     if (verified && _firebaseUser != null) {
-      _user = await _repository.loadProfile(_firebaseUser!.uid);
+      _isInitialized = false;
+      notifyListeners();
+      try {
+        _user = await _repository.loadProfile(_firebaseUser!.uid);
+        _profileError = _user == null
+            ? 'Your Firebase user exists, but the campus profile is missing. Contact the administrator.'
+            : null;
+      } catch (error) {
+        _user = null;
+        _profileError =
+            'Email is verified, but the profile could not be loaded: $error';
+      } finally {
+        if (version == _authStateVersion) {
+          _isInitialized = true;
+          notifyListeners();
+        }
+      }
+    } else {
+      notifyListeners();
     }
-    notifyListeners();
     return verified;
   }
 
   Future<void> resendVerification() => _repository.resendVerification();
+
+  Future<void> sendPasswordResetEmail(String email) =>
+      _repository.sendPasswordResetEmail(email);
 
   Future<void> logout() async {
     await _repository.logout();
     ++_authStateVersion;
     _firebaseUser = null;
     _user = null;
+    _profileError = null;
     _errorMessage = null;
+    _isInitialized = true;
     notifyListeners();
   }
 
+  Future<void> updateProfileName(String name) async {
+    final current = _user;
+    if (current == null) {
+      throw StateError('Your profile is not loaded. Please sign in again.');
+    }
+    await _runLoading(() async {
+      final updated = await _repository.updateProfileName(current.uid, name);
+      if (updated == null) {
+        throw StateError('The profile was updated but could not be reloaded.');
+      }
+      _user = updated;
+    });
+  }
+
   Future<void> refreshProfile() async {
+    final version = ++_authStateVersion;
     final current = _repository.currentUser;
     _firebaseUser = current;
+    _profileError = null;
     if (current == null) {
       _user = null;
-    } else {
-      _user = await _repository.loadProfile(current.uid);
+      _isInitialized = true;
+      notifyListeners();
+      return;
     }
+
+    _isInitialized = false;
     notifyListeners();
+    try {
+      final profile = await _repository.loadProfile(current.uid);
+      if (version != _authStateVersion) return;
+      _user = profile;
+      if (profile == null) {
+        _profileError =
+            'Your profile record is missing. Ask an administrator to restore your account role.';
+      }
+    } catch (error) {
+      if (version != _authStateVersion) return;
+      _user = null;
+      _profileError = 'Could not load your profile: $error';
+    } finally {
+      if (version == _authStateVersion) {
+        _isInitialized = true;
+        notifyListeners();
+      }
+    }
   }
 
   Future<void> _runLoading(Future<void> Function() action) async {
@@ -140,6 +243,7 @@ class AuthProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    ++_authStateVersion;
     _authSubscription?.cancel();
     super.dispose();
   }

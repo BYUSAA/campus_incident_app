@@ -19,23 +19,53 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  Future<void> _resetPassword() async {
+    final emailError = Validators.validateEmail(_emailController.text);
+    if (emailError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(emailError)),
+      );
+      return;
+    }
+
+    try {
+      await context.read<AuthProvider>().sendPasswordResetEmail(
+        _emailController.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'If the account exists, a password reset email has been sent.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not request a password reset: $error'),
+        ),
+      );
+    }
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     try {
       await context.read<AuthProvider>().login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
       if (mounted) context.go('/home');
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: AppConstants.errorColor,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: AppConstants.errorColor,
+        ),
+      );
     }
   }
 
@@ -59,11 +89,21 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.school, size: 60, color: AppConstants.primaryColor),
+                const Icon(
+                  Icons.school,
+                  size: 60,
+                  color: AppConstants.primaryColor,
+                ),
                 const SizedBox(height: 24),
-                const Text('Welcome Back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Welcome Back',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
-                const Text('Log in to report and follow up on campus incidents.', style: TextStyle(color: Colors.grey)),
+                const Text(
+                  'Log in to report and follow up on campus incidents.',
+                  style: TextStyle(color: Colors.grey),
+                ),
                 const SizedBox(height: 40),
                 AuthFormField(
                   label: 'ALU Email',
@@ -82,7 +122,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: Icons.lock_outline,
                   validator: Validators.validatePassword,
                 ),
-                const SizedBox(height: 32),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: isLoading ? null : _resetPassword,
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

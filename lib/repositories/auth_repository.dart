@@ -44,6 +44,9 @@ class AuthRepository {
       );
     }
 
+    // The Auth account and its Firestore profile form the durable identity.
+    // Roll back Auth only if the profile itself cannot be created; a temporary
+    // verification-email outage must not leave an orphaned profile document.
     try {
       await firebaseUser.updateDisplayName(normalizedName);
       await _users.create(
@@ -54,15 +57,22 @@ class AuthRepository {
           role: 'student',
         ),
       );
-      await _verification.send(firebaseUser);
     } catch (_) {
-      // Avoid leaving an Auth account without its required profile.
       try {
         await firebaseUser.delete();
       } catch (_) {
         await _auth.logout();
       }
       rethrow;
+    }
+
+    try {
+      await _verification.send(firebaseUser);
+    } catch (error) {
+      throw StateError(
+        'Your account was created, but the verification email could not be sent. '
+        'Use Resend verification email on the next screen. $error',
+      );
     }
   }
 
@@ -95,8 +105,23 @@ class AuthRepository {
   }
 
   Future<void> resendVerification() => _auth.sendVerificationEmail();
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    final emailError = Validators.validateEmail(normalizedEmail);
+    if (emailError != null) throw ArgumentError(emailError);
+    await _auth.sendPasswordResetEmail(normalizedEmail);
+  }
+
   Future<void> logout() => _auth.logout();
   Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
+
+  Future<AppUser?> updateProfileName(String uid, String name) async {
+    final error = Validators.validateName(name);
+    if (error != null) throw ArgumentError(error);
+    await _users.updateName(uid, name);
+    return loadProfile(uid);
+  }
 
   Future<bool> refreshVerification() async {
     final firebaseUser = _auth.currentUser;

@@ -23,6 +23,7 @@ class FakeIncidentRepository implements IncidentRepository {
   String? lastCreatedTitle;
   String? lastUpdatedStatus;
   String? lastDeletedId;
+  bool lastRemovePhoto = false;
   int watchAllCalls = 0;
 
   @override
@@ -59,7 +60,13 @@ class FakeIncidentRepository implements IncidentRepository {
       id == sample.id ? sample : null;
 
   @override
-  Future<void> update(Incident incident, {File? photo}) async {}
+  Future<void> update(
+    Incident incident, {
+    File? photo,
+    bool removePhoto = false,
+  }) async {
+    lastRemovePhoto = removePhoto;
+  }
 
   @override
   Future<void> updateStatus(String id, String status) async {
@@ -130,6 +137,16 @@ void main() {
 
       expect(repository.lastCreatedBy, 'student-1');
       expect(repository.lastCreatedTitle, 'Leaking tap');
+      provider.dispose();
+    });
+
+    test('forwards photo removal during report editing', () async {
+      final repository = FakeIncidentRepository();
+      final provider = IncidentProvider(repository: repository);
+
+      await provider.updateIncident(repository.sample, removePhoto: true);
+
+      expect(repository.lastRemovePhoto, isTrue);
       provider.dispose();
     });
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/constants/incident_categories.dart';
 import '../../../core/utils/validators.dart';
 import '../../../models/incident.dart';
 import '../../../providers/auth_provider.dart';
@@ -33,16 +34,29 @@ class _IncidentFormState extends State<IncidentForm> {
 
   late String _selectedCategory;
   File? _selectedPhoto;
+  bool _removeExistingPhoto = false;
   bool _isLoading = false;
+
+  String? get _existingImageUrl {
+    final incident = widget.initialIncident;
+    if (incident == null || _removeExistingPhoto) return null;
+    return incident.imageUrl ??
+        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+  }
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initialIncident;
     _titleController = TextEditingController(text: initial?.title ?? '');
-    _descriptionController = TextEditingController(text: initial?.description ?? '');
-    _locationController = TextEditingController(text: initial?.location ?? '');
-    _selectedCategory = initial?.category ?? 'Facilities';
+    _descriptionController =
+        TextEditingController(text: initial?.description ?? '');
+    _locationController =
+        TextEditingController(text: initial?.location ?? '');
+    final initialCategory = initial?.category;
+    _selectedCategory = IncidentCategories.names.contains(initialCategory)
+        ? initialCategory!
+        : IncidentCategories.names.first;
   }
 
   @override
@@ -58,7 +72,9 @@ class _IncidentFormState extends State<IncidentForm> {
     final user = context.read<AuthProvider>().user;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in again before submitting.')),
+        const SnackBar(
+          content: Text('Please sign in again before submitting.'),
+        ),
       );
       return;
     }
@@ -86,9 +102,12 @@ class _IncidentFormState extends State<IncidentForm> {
           description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
-          reporterName: user.name,
         );
-        await provider.updateIncident(updated, photo: _selectedPhoto);
+        await provider.updateIncident(
+          updated,
+          photo: _selectedPhoto,
+          removePhoto: _removeExistingPhoto,
+        );
       }
 
       if (mounted) widget.onSuccess();
@@ -177,7 +196,13 @@ class _IncidentFormState extends State<IncidentForm> {
           const SizedBox(height: 12),
           PhotoPicker(
             selectedImage: _selectedPhoto,
-            onImageSelected: (file) => setState(() => _selectedPhoto = file),
+            existingImageUrl: _existingImageUrl,
+            onImageSelected: (file) {
+              setState(() => _selectedPhoto = file);
+            },
+            onExistingImageRemoved: () {
+              setState(() => _removeExistingPhoto = true);
+            },
           ),
           const SizedBox(height: 28),
           SizedBox(
