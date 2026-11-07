@@ -44,18 +44,14 @@ jobs:
           dart --version
           java -version
 
-      - name: Generate Android runner for CI build
-        shell: bash
+      - name: Verify committed Android runner
         run: |
-          if [ -d android ] && [ ! -f android/app/src/main/AndroidManifest.xml ]; then
-            mkdir -p "$RUNNER_TEMP/campus-android-docs"
-            cp -a android/. "$RUNNER_TEMP/campus-android-docs/"
-            rm -rf android
-            flutter create --platforms=android --org com.byusa .
-            cp -a "$RUNNER_TEMP/campus-android-docs/." android/
-          else
-            flutter create --platforms=android --org com.byusa .
-          fi
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/app/build.gradle.kts
+          test -f android/settings.gradle.kts
+          test -f android/gradle/wrapper/gradle-wrapper.properties
+          grep -q 'minSdk = 24' android/app/build.gradle.kts
+          grep -q 'com.byusa.campus_incident_reporter' android/app/build.gradle.kts
 
       - name: Install Flutter dependencies
         run: flutter pub get
