@@ -100,6 +100,7 @@ The router directs signed-out users to Login, unverified users to email verifica
 The rules enforce the following behavior:
 
 - Incident operations require a verified @alustudent.com account.
+- Users can read only their own profile document; staff role checks use server-side rule lookups rather than granting access to all student profiles.
 - Students can read only incidents whose reportedBy value matches their UID.
 - Staff can read the incident queue when the trusted profile has the staff role.
 - Students can create reports only for themselves and only with initial status Submitted.
