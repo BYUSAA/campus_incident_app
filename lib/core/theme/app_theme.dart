@@ -53,7 +53,7 @@ class AppTheme {
         seedColor: AppConstants.primaryColor,
         brightness: Brightness.dark,
       ),
-      appBarTheme: const AppBarTheme(centerTitle: true),
+      appBarTheme: const AppBarThemeData(centerTitle: true),
       inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: const Color(0xFF252525),
