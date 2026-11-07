@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
 import '../widgets/incident_card.dart';
 
@@ -16,16 +15,6 @@ class MyIncidentsScreen extends StatefulWidget {
 
 class _MyIncidentsScreenState extends State<MyIncidentsScreen> {
   String _selectedFilter = 'All';
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final user = context.read<AuthProvider>().user;
-      if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
