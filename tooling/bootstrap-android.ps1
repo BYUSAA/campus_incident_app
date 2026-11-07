@@ -72,8 +72,8 @@ try {
             $applicationId = $Matches[1]
         }
 
-        # Firebase FlutterFire 5.x uses Firebase Android SDK 35 and requires
-        # Android API 24 or newer. Pin the generated app minimum explicitly.
+        # image_picker 1.2.4 supports Android API 24 and newer. Pin the generated
+        # app minimum explicitly so Flutter and CI use the same requirement.
         $updatedGradleContent = $gradleContent -replace '(?m)^\s*minSdk\s*=\s*flutter\.minSdkVersion\s*$', 'minSdk = 24'
         $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdkVersion\s+flutter\.minSdkVersion\s*$', 'minSdkVersion 24'
         $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdk\s*=\s*2[1-3]\s*$', 'minSdk = 24'
