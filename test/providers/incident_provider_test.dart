@@ -59,7 +59,11 @@ class FakeIncidentRepository implements IncidentRepository {
       id == sample.id ? sample : null;
 
   @override
-  Future<void> update(\n    Incident incident, {\n    File? photo,\n    bool removePhoto = false,\n  }) async {}
+  Future<void> update(
+    Incident incident, {
+    File? photo,
+    bool removePhoto = false,
+  }) async {}
 
   @override
   Future<void> updateStatus(String id, String status) async {
