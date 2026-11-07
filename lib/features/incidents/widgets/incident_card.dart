@@ -15,7 +15,9 @@ class IncidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _statusColor(incident.status);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final statusColor = _statusColor(colors, incident.status);
     final imageUrl = incident.imageUrl ??
         (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
 
@@ -32,23 +34,14 @@ class IncidentCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: imageUrl == null
-                    ? Container(
-                        width: 64,
-                        height: 64,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.image_outlined, color: Colors.grey),
-                      )
+                    ? _imagePlaceholder(colors)
                     : Image.network(
                         imageUrl,
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stack) => Container(
-                          width: 64,
-                          height: 64,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                        ),
+                        errorBuilder: (context, error, stack) =>
+                            _imagePlaceholder(colors, broken: true),
                       ),
               ),
               const SizedBox(width: 14),
@@ -60,19 +53,25 @@ class IncidentCard extends StatelessWidget {
                       incident.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       incident.location,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 7),
                     Text(
                       DateFormat('MMM d, h:mm a').format(incident.createdAt),
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -81,7 +80,7 @@ class IncidentCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -100,14 +99,26 @@ class IncidentCard extends StatelessWidget {
     );
   }
 
-  Color _statusColor(String status) {
+  Widget _imagePlaceholder(ColorScheme colors, {bool broken = false}) {
+    return Container(
+      width: 64,
+      height: 64,
+      color: colors.surfaceContainerHighest,
+      child: Icon(
+        broken ? Icons.broken_image_outlined : Icons.image_outlined,
+        color: colors.onSurfaceVariant,
+      ),
+    );
+  }
+
+  Color _statusColor(ColorScheme colors, String status) {
     switch (status) {
       case 'Resolved':
-        return Colors.green;
+        return colors.tertiary;
       case 'In Progress':
-        return Colors.blue;
+        return colors.primary;
       default:
-        return Colors.orange;
+        return colors.secondary;
     }
   }
 }

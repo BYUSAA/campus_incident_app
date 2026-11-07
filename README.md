@@ -91,13 +91,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\tooling\bootstrap-android.ps1
 ```
 
-The script generates the runner only if it is missing, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
+The script generates the runner only if it is missing, sets and verifies Android `minSdk` 24 for the current Firebase Android SDK, installs Flutter dependencies, and prints the Android application ID. With the current Flutter project name and the `com.byusa` organization prefix, the expected ID is `com.byusa.campus_incident_reporter`. Confirm the actual value in `android/app/build.gradle.kts` before registering the Android app in Firebase Console.
 
-The direct Flutter command is:
-
-```powershell
-flutter create --platforms=android --org com.byusa .
-```
+If you generate the Android runner manually instead of using the script, set `minSdk = 24` in `android/app/build.gradle.kts` (or `minSdkVersion 24` in Groovy Gradle) before building. Firebase Android SDK 35 requires API 24 or newer.
 
 ## 3. Configure Firebase
 
@@ -123,7 +119,7 @@ dart pub global activate flutterfire_cli
 flutterfire configure --project YOUR_FIREBASE_PROJECT_ID --platforms=android
 ```
 
-Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. Never commit service-account JSON, private keys, or passwords.
+Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. After `flutter pub get`, commit the generated `pubspec.lock` so the app's resolved dependency versions are reproducible. Never commit service-account JSON, private keys, or passwords.
 
 ## 4. Deploy security rules and indexes
 
@@ -147,6 +143,15 @@ flutter build apk --debug
 flutter devices
 flutter run
 ```
+
+For a single local verification run after setup, use:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\tooling\verify-project.ps1
+```
+
+This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when an Android device is connected. It stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` and `firebase/rules-tests/package-lock.json` afterward.
 
 The assignment requires Android or iOS runtime evidence. A browser-only run does not replace the Android emulator or physical-device demonstration.
 
@@ -252,7 +257,6 @@ Capture genuine screenshots from your configured Android app and Firebase Consol
 - Android runner files and Firebase options are generated on the developer's computer; they are not fabricated in this repository.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
 - Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
-- Push notifications, offline submission, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
 
 ## License

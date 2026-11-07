@@ -184,7 +184,7 @@ The automated tests do not replace testing against the student's configured Fire
 
 ## 9. Challenges and design trade-offs
 
-The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
+The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. The bootstrap script explicitly sets Android `minSdk` to API 24, matching the current Firebase Android SDK requirement [11]. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
 
 The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
@@ -223,3 +223,5 @@ The recording must show student registration and verification, login, incident c
 [9] Google, “Build unit tests for Firebase Security Rules.” [Online]. Available: https://firebase.google.com/docs/rules/unit-tests. [Accessed: Nov. 7, 2026].
 
 [10] Google, “Use conditions in Cloud Storage Security Rules.” [Online]. Available: https://firebase.google.com/docs/storage/security/rules-conditions. [Accessed: Nov. 7, 2026].
+
+[11] Google, “Add Firebase to your Android project.” [Online]. Available: https://firebase.google.com/docs/android/setup. [Accessed: Nov. 7, 2026].

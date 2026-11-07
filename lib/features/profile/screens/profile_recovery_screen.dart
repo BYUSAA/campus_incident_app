@@ -50,8 +50,8 @@ class ProfileRecoveryScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: auth.isLoading ? null : auth.refreshProfile,
-                      icon: auth.isLoading
+                      onPressed: auth.isInitialized ? auth.refreshProfile : null,
+                      icon: !auth.isInitialized
                           ? const SizedBox(
                               width: 18,
                               height: 18,

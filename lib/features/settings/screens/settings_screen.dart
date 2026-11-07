@@ -17,7 +17,7 @@ class SettingsScreen extends StatelessWidget {
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text('Dark mode'),
             subtitle: const Text('Change the appearance of the app on this device.'),
-            value: theme.isDark,
+            value: Theme.of(context).brightness == Brightness.dark,
             onChanged: theme.toggle,
           ),
           const ListTile(

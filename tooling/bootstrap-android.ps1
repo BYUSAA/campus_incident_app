@@ -60,17 +60,46 @@ try {
         (Join-Path $repositoryRoot 'android/app/build.gradle')
     )
     foreach ($gradleFile in $gradleFiles) {
-        if (Test-Path $gradleFile) {
-            $gradleContent = Get-Content $gradleFile -Raw
-            if ($gradleContent -match 'applicationId\s*=\s*"([^"]+)"') {
-                $applicationId = $Matches[1]
-                break
-            }
-            if ($gradleContent -match 'applicationId\s+"([^"]+)"') {
-                $applicationId = $Matches[1]
-                break
-            }
+        if (-not (Test-Path $gradleFile)) {
+            continue
         }
+
+        $gradleContent = Get-Content $gradleFile -Raw
+        if ($gradleContent -match 'applicationId\s*=\s*"([^"]+)"') {
+            $applicationId = $Matches[1]
+        }
+        elseif ($gradleContent -match 'applicationId\s+"([^"]+)"') {
+            $applicationId = $Matches[1]
+        }
+
+        # Firebase FlutterFire 5.x uses Firebase Android SDK 35 and requires
+        # Android API 24 or newer. Pin the generated app minimum explicitly.
+        $updatedGradleContent = $gradleContent -replace '(?m)^\s*minSdk\s*=\s*flutter\.minSdkVersion\s*$', 'minSdk = 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdkVersion\s+flutter\.minSdkVersion\s*$', 'minSdkVersion 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdk\s*=\s*2[1-3]\s*$', 'minSdk = 24'
+        $updatedGradleContent = $updatedGradleContent -replace '(?m)^\s*minSdkVersion\s+2[1-3]\s*$', 'minSdkVersion 24'
+
+        if ($updatedGradleContent -ne $gradleContent) {
+            Set-Content -Path $gradleFile -Value $updatedGradleContent -Encoding utf8
+            $gradleContent = $updatedGradleContent
+        }
+
+        $minimumSdk = $null
+        if ($gradleContent -match '(?m)^\s*minSdk\s*=\s*(\d+)\s*$') {
+            $minimumSdk = [int]$Matches[1]
+        }
+        elseif ($gradleContent -match '(?m)^\s*minSdkVersion\s+(\d+)\s*$') {
+            $minimumSdk = [int]$Matches[1]
+        }
+
+        if ($null -eq $minimumSdk -or $minimumSdk -lt 24) {
+            throw "The Android app minimum SDK must be explicitly set to API 24 or newer in $gradleFile."
+        }
+        break
+    }
+
+    if ($null -eq $applicationId) {
+        throw 'Could not read the Android application ID from the generated Gradle file.'
     }
 
     Write-Host 'Installing Flutter dependencies...' -ForegroundColor Cyan
@@ -81,14 +110,9 @@ try {
 
     Write-Host ''
     Write-Host 'Android runner is ready.' -ForegroundColor Green
-    if ($applicationId) {
-        Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
-        Write-Host 'Register this exact application ID in Firebase Console.'
-    }
-    else {
-        Write-Warning 'Could not read the application ID. Check android/app/build.gradle(.kts).'
-    }
-
+    Write-Host "Android application ID: $applicationId" -ForegroundColor Yellow
+    Write-Host 'Register this exact application ID in Firebase Console.'
+    Write-Host 'Android minimum SDK: 24'
     Write-Host ''
     Write-Host 'Next: run the Firebase setup script with your real Firebase project ID:'
     Write-Host '.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID'

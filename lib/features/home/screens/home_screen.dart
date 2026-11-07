@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
+                    backgroundColor: AppConstants.primaryColor.withValues(alpha: 0.1),
                     child: const Icon(Icons.person_outline, color: AppConstants.primaryColor),
                   ),
                 ],
@@ -159,20 +159,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _summaryCard(String count, String label, Color color) {
+    final colors = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: 0.05),
+              blurRadius: 10,
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
+            ),
           ],
         ),
       ),

@@ -27,7 +27,7 @@ service firebase.storage {
         && request.resource.size > 0
         && request.resource.size < 8 * 1024 * 1024
         && request.resource.contentType is string
-        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+        && request.resource.contentType.matches('^image/(jpeg|png|webp)$');
 
       // Staff need delete permission so they can moderate a report and clean
       // up its photo after deleting its Firestore document.
