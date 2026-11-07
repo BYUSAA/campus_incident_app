@@ -93,7 +93,7 @@ The incident model supports imageUrl and older records containing a photoUrls ar
 
 Firebase Authentication is used for email/password registration and sign-in [3]. Registration validates the ALU email domain, creates the account with a student role, and sends a verification message. The login workflow refreshes the Firebase user and rejects accounts whose email is not verified.
 
-The router directs signed-out users to Login, unverified users to email verification, and verified staff users to the staff dashboard. These route guards, implemented with go_router [8], improve navigation, but they are not the security boundary. Firestore and Storage security rules enforce authorization on backend requests [5], [6].
+The router directs signed-out users to Login, unverified users to email verification, and verified staff users to the staff dashboard. Staff routes are limited to the dashboard and incident-management screen; student routes are blocked for staff, and staff routes are blocked for students. These route guards, implemented with go_router [8], improve navigation, but they are not the security boundary. Firestore and Storage security rules enforce authorization on backend requests [5], [6].
 
 ### 5.1 Firestore authorization
 
@@ -102,7 +102,7 @@ The rules enforce the following behavior:
 - Incident operations require a verified @alustudent.com account.
 - Users can read only their own profile document; staff role checks use server-side rule lookups rather than granting access to all student profiles.
 - Students can read only incidents whose reportedBy value matches their UID.
-- Staff can read the incident queue when the trusted profile has the staff role.
+- Staff can read, search, and filter the incident queue when the trusted profile has the staff role.
 - Students can create reports only for themselves and only with initial status Submitted.
 - The backend validates required report content, permitted categories, and the same text length limits used by the form.
 - Students can edit or delete their own report only while the stored status is still Submitted. They cannot change ownership, reporter identity, creation time, or status.
@@ -122,14 +122,14 @@ A Firebase administrator must deploy the checked-in rules and indexes to the cor
 The project uses Provider with ChangeNotifier, a supported approach for exposing application state to Flutter widgets [7].
 
 - AuthProvider exposes the Firebase user, application profile, loading state, and authentication initialization state. It listens for authentication changes, safely handles asynchronous profile loading, supports password reset, and allows a user to update their display name without changing protected account fields.
-- IncidentProvider manages a Firestore stream subscription for the current student's reports or the staff incident queue. It exposes the current list, loading state, and error state, clears stale data when the account/feed changes, and cancels the previous subscription when switching streams or disposing.
+- IncidentProvider is bound to AuthProvider through ChangeNotifierProxyProvider. It selects one Firestore stream for the authenticated student or staff account, avoids duplicate listeners, clears prior-user data on sign-out/profile loss, ignores stale events, supports refresh, and exposes incident lookup so open detail screens stay synchronized.
 - ThemeProvider restores and persists the light/dark appearance preference with local device storage; the system theme is used when no preference is saved.
 
 The separation between screen widgets and repositories keeps the Firebase query and persistence details outside the UI layer.
 
 ## 7. UI/UX decisions
 
-The interface focuses on the main user journey: authenticate, report an incident, find a report, inspect its details, and follow its status. The home screen presents a prominent reporting action, a summary of the user's report statuses, and recent reports. The report form uses category selection, required text fields, a campus location, and an optional image picker. Report cards make the title, location, creation date, and status visible. The details screen presents the description, attached image when available, and status progress.
+The interface focuses on the main user journey: authenticate, report an incident, find a report, inspect its details, and follow its status. The home screen presents a prominent reporting action, a summary of the user's report statuses, and recent reports. The report form uses category selection, required text fields, a campus location, and an optional image picker. Report cards make the title, location, creation date, and status visible. The details screen presents the description, attached image when available, and status progress. Open detail and staff-management screens resolve the current incident from the shared Provider feed, so status changes propagate while the screen remains open. The staff queue also supports search and status filtering.
 
 The form and backend use matching length constraints: 100 characters for the title, 1,000 for the description, and 160 for the location. This reduces avoidable rejected writes and protects the data model from oversized input.
 
@@ -152,7 +152,7 @@ Use images from the real app and the student's Firebase project only. Hide email
 
 ## 8. Testing strategy and evidence
 
-The repository contains unit and widget tests for incident model mapping, email/name/report validation, forward-only status transitions, Provider feed switching and report actions using a fake repository, incident form required fields, existing-photo removal, and theme preference restoration/persistence. A Firebase Emulator Suite test package verifies Firestore and Storage permissions independently of the UI. An Android integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
+The repository contains unit and widget tests for incident model mapping, email/name/report validation, forward-only status transitions, authentication/role route redirects, Provider feed switching/deduplication/clearing/lookup and report actions using a fake repository, incident form required fields, existing-photo removal, and theme preference restoration/persistence. A Firebase Emulator Suite test package verifies Firestore and Storage permissions independently of the UI. An Android integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
 
 Run these commands from the project root after Android and Firebase configuration:
 
@@ -186,7 +186,7 @@ The automated tests do not replace testing against the student's configured Fire
 
 The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
 
-The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
+The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. Search and status filtering operate on reports currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
 ## 10. Lessons learned and future work
 
