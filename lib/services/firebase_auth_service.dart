@@ -35,7 +35,7 @@ class FirebaseAuthService {
     }
   }
 
-  Future<void> reloadUser() async {
+  Future<void> sendPasswordResetEmail(String email) {\n    return _auth.sendPasswordResetEmail(email: email.trim().toLowerCase());\n  }\n\n  Future<void> reloadUser() async {
     await _auth.currentUser?.reload();
   }
 
