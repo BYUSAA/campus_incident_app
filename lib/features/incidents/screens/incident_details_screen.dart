@@ -200,7 +200,7 @@ class IncidentDetailsScreen extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final currentStep = status == 'Resolved'
         ? 2
-        : incident.status == 'In Progress'
+        : status == 'In Progress'
             ? 1
             : 0;
     const steps = ['Submitted', 'In Progress', 'Resolved'];
