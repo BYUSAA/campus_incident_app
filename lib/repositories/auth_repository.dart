@@ -104,7 +104,14 @@ class AuthRepository {
   }
 
   Future<void> logout() => _auth.logout();
-  Future<AppUser?> loadProfile(String uid) => _users.getById(uid);\n\n  Future<AppUser?> updateProfileName(String uid, String name) async {\n    final error = Validators.validateName(name);\n    if (error != null) throw ArgumentError(error);\n    await _users.updateName(uid, name);\n    return loadProfile(uid);\n  }
+  Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
+
+  Future<AppUser?> updateProfileName(String uid, String name) async {
+    final error = Validators.validateName(name);
+    if (error != null) throw ArgumentError(error);
+    await _users.updateName(uid, name);
+    return loadProfile(uid);
+  }
 
   Future<bool> refreshVerification() async {
     final firebaseUser = _auth.currentUser;
