@@ -154,7 +154,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshProfile() async {
+  Future<void> updateProfileName(String name) async {\n    final current = _user;\n    if (current == null) {\n      throw StateError('Your profile is not loaded. Please sign in again.');\n    }\n    await _runLoading(() async {\n      final updated = await _repository.updateProfileName(current.uid, name);\n      if (updated == null) {\n        throw StateError('The profile was updated but could not be reloaded.');\n      }\n      _user = updated;\n    });\n  }\n\n  Future<void> refreshProfile() async {
     final version = ++_authStateVersion;
     final current = _repository.currentUser;
     _firebaseUser = current;
