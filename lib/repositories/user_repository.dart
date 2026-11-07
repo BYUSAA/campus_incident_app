@@ -16,7 +16,14 @@ class UserRepository {
     });
   }
 
-  Future<void> updateName(String uid, String name) {\n    return _firestore.saveUser(uid, {\n      'name': name.trim(),\n      'updatedAt': FieldValue.serverTimestamp(),\n    });\n  }\n\n  Future<AppUser?> getById(String uid) async {
+  Future<void> updateName(String uid, String name) {
+    return _firestore.saveUser(uid, {
+      'name': name.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<AppUser?> getById(String uid) async {
     final data = await _firestore.getUser(uid);
     return data == null ? null : AppUser.fromMap(data);
   }
