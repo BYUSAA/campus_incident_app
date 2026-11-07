@@ -63,7 +63,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hint: 'Your full name',
                   controller: _nameController,
                   prefixIcon: Icons.person_outline,
-                  validator: (value) => Validators.validateRequired(value, 'Name'),
+                  validator: Validators.validateName,
+                  maxLength: 80,
                 ),
                 const SizedBox(height: 20),
                 AuthFormField(
