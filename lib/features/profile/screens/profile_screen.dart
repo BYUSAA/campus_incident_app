@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../widgets/profile_header.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,40 +18,36 @@ class ProfileScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.paddingL),
         children: [
-          Center(
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: AppConstants.primaryColor.withOpacity(0.1),
-              child: const Icon(Icons.person, size: 50, color: AppConstants.primaryColor),
-            ),
+          ProfileHeader(
+            name: user?.name ?? 'User',
+            email: user?.email ?? '',
+            roleLabel: user?.isStaff == true ? 'Authorized staff' : 'Student',
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              user?.name ?? 'User',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Center(
-            child: Text(
-              user?.email ?? '',
-              style: const TextStyle(color: AppConstants.greyText),
-            ),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
           ListTile(
-            leading: const Icon(Icons.settings),
+            leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const SettingsScreen(),
+              ),
             ),
           ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () => context.read<AuthProvider>().logout(),
+            onTap: () async {
+              try {
+                await context.read<AuthProvider>().logout();
+              } catch (error) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not sign out: $error')),
+                );
+              }
+            },
           ),
         ],
       ),
