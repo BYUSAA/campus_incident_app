@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../core/constants/app_constants.dart';
+import '../core/utils/validators.dart';
 import '../models/app_user.dart';
 import '../services/email_verification_service.dart';
 import '../services/firebase_auth_service.dart';
@@ -23,31 +23,15 @@ class AuthRepository {
     required String password,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
-    final atIndex = normalizedEmail.indexOf('@');
-    final hasValidEmailShape = atIndex > 0 &&
-        atIndex == normalizedEmail.lastIndexOf('@') &&
-        normalizedEmail.lastIndexOf('.') > atIndex;
-
-    if (!hasValidEmailShape ||
-        normalizedEmail.length > 254 ||
-        !normalizedEmail.endsWith(AppConstants.aluStudentDomain)) {
-      throw ArgumentError(
-        'Please register with a valid @alustudent.com email address.',
-      );
-    }
+    final emailError = Validators.validateEmail(normalizedEmail);
+    if (emailError != null) throw ArgumentError(emailError);
 
     final normalizedName = name.trim();
-    if (normalizedName.isEmpty || normalizedName.length > 80) {
-      throw ArgumentError(
-        'Your name must be between 1 and 80 characters.',
-      );
-    }
+    final nameError = Validators.validateName(normalizedName);
+    if (nameError != null) throw ArgumentError(nameError);
 
-    if (password.length < 6) {
-      throw ArgumentError(
-        'Your password must be at least 6 characters.',
-      );
-    }
+    final passwordError = Validators.validatePassword(password);
+    if (passwordError != null) throw ArgumentError(passwordError);
 
     final credential = await _auth.register(
       email: normalizedEmail,
