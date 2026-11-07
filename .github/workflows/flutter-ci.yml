@@ -45,7 +45,17 @@ jobs:
           java -version
 
       - name: Generate Android runner for CI build
-        run: flutter create --platforms=android --org com.byusa .
+        shell: bash
+        run: |
+          if [ -d android ] && [ ! -f android/app/src/main/AndroidManifest.xml ]; then
+            mkdir -p "$RUNNER_TEMP/campus-android-docs"
+            cp -a android/. "$RUNNER_TEMP/campus-android-docs/"
+            rm -rf android
+            flutter create --platforms=android --org com.byusa .
+            cp -a "$RUNNER_TEMP/campus-android-docs/." android/
+          else
+            flutter create --platforms=android --org com.byusa .
+          fi
 
       - name: Install Flutter dependencies
         run: flutter pub get
