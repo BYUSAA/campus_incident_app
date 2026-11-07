@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+const Object _notProvided = Object();
+
 class Incident {
   const Incident({
     required this.id,
@@ -39,7 +41,7 @@ class Incident {
       'category': category,
       'location': location,
       'status': status,
-      'imageUrl': imageUrl ?? (images.isEmpty ? null : images.first),
+      'imageUrl': images.isEmpty ? null : images.first,
       'photoUrls': images,
       'reportedBy': reportedBy,
       'reporterName': reporterName,
@@ -51,24 +53,37 @@ class Incident {
   factory Incident.fromMap(String id, Map<String, dynamic> map) {
     final rawImages = map['photoUrls'];
     final images = rawImages is List
-        ? rawImages.whereType<String>().toList(growable: false)
+        ? rawImages.whereType<String>().where((url) => url.isNotEmpty).toList(
+              growable: false,
+            )
         : <String>[];
-    final legacyImage = map['imageUrl'] as String?;
+    final legacyImage = _nullableString(map['imageUrl']);
+    final normalizedImages = images.isNotEmpty
+        ? images
+        : (legacyImage == null ? <String>[] : <String>[legacyImage]);
+
     return Incident(
       id: id,
-      title: map['title'] as String? ?? '',
-      description: map['description'] as String? ?? '',
-      category: map['category'] as String? ?? 'Other',
-      location: map['location'] as String? ?? '',
-      status: map['status'] as String? ?? 'Submitted',
-      imageUrl: legacyImage ?? (images.isEmpty ? null : images.first),
-      photoUrls: images.isEmpty && legacyImage != null ? [legacyImage] : images,
-      reportedBy: map['reportedBy'] as String? ?? '',
-      reporterName: map['reporterName'] as String?,
-      assignedTo: map['assignedTo'] as String?,
-      createdAt: _dateTimeFrom(map['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      title: _string(map['title']),
+      description: _string(map['description']),
+      category: _string(map['category'], fallback: 'Other'),
+      location: _string(map['location']),
+      status: _string(map['status'], fallback: 'Submitted'),
+      imageUrl: normalizedImages.isEmpty ? null : normalizedImages.first,
+      photoUrls: normalizedImages,
+      reportedBy: _string(map['reportedBy']),
+      reporterName: _nullableString(map['reporterName']),
+      assignedTo: _nullableString(map['assignedTo']),
+      createdAt: _dateTimeFrom(map['createdAt']) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
+
+  static String _string(Object? value, {String fallback = ''}) =>
+      value is String ? value : fallback;
+
+  static String? _nullableString(Object? value) =>
+      value is String && value.isNotEmpty ? value : null;
 
   static DateTime? _dateTimeFrom(Object? value) {
     if (value is Timestamp) return value.toDate();
@@ -83,11 +98,19 @@ class Incident {
     String? category,
     String? location,
     String? status,
-    String? imageUrl,
+    Object? imageUrl = _notProvided,
     List<String>? photoUrls,
-    String? reporterName,
-    String? assignedTo,
+    Object? reporterName = _notProvided,
+    Object? assignedTo = _notProvided,
   }) {
+    final nextImageUrl = identical(imageUrl, _notProvided)
+        ? this.imageUrl
+        : imageUrl as String?;
+    final nextPhotoUrls = photoUrls ??
+        (identical(imageUrl, _notProvided)
+            ? this.photoUrls
+            : (nextImageUrl == null ? <String>[] : <String>[nextImageUrl]));
+
     return Incident(
       id: id,
       title: title ?? this.title,
@@ -95,11 +118,15 @@ class Incident {
       category: category ?? this.category,
       location: location ?? this.location,
       status: status ?? this.status,
-      imageUrl: imageUrl ?? this.imageUrl,
-      photoUrls: photoUrls ?? this.photoUrls,
+      imageUrl: nextImageUrl,
+      photoUrls: nextPhotoUrls,
       reportedBy: reportedBy,
-      reporterName: reporterName ?? this.reporterName,
-      assignedTo: assignedTo ?? this.assignedTo,
+      reporterName: identical(reporterName, _notProvided)
+          ? this.reporterName
+          : reporterName as String?,
+      assignedTo: identical(assignedTo, _notProvided)
+          ? this.assignedTo
+          : assignedTo as String?,
       createdAt: createdAt,
     );
   }
