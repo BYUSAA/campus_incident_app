@@ -6,7 +6,7 @@
 **State management:** Provider with ChangeNotifier  
 **Citation style:** IEEE
 
-> **Submission status:** This is an implementation-based report draft. Project-specific Firebase configuration, generated Android runner files, live Firebase evidence, real-device test results, screenshots, and the required 7–10 minute demonstration URL must be added by the student after running the app. No credentials, test outcomes, screenshots, or demo links are invented. Export the completed report as PDF before uploading it to Canvas.
+> **Submission status:** This is an implementation-based report draft. The native Android runner is committed in the repository with application ID `com.byusa.campus_incident_reporter` and minimum Android API 24. Project-specific Firebase configuration, live Firebase evidence, real-device test results, screenshots, and the required 7–10 minute demonstration URL remain unverified and must come from the configured app. No credentials, test outcomes, screenshots, or demo links are invented. Export the completed report as PDF before uploading it to Canvas.
 
 ## Abstract
 
@@ -184,7 +184,7 @@ The automated tests do not replace testing against the student's configured Fire
 
 ## 9. Challenges and design trade-offs
 
-The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. The bootstrap script explicitly sets Android `minSdk` to API 24, matching the current Firebase Android SDK requirement [11]. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
+The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The native Android project is committed with application ID `com.byusa.campus_incident_reporter` and `minSdk` 24, matching the Firebase Android platform requirement [11]. The remaining environment-specific setup is the actual Firebase project configuration and the local Flutter/Android SDK. The deployment script asks for explicit confirmation before publishing rules.
 
 The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
