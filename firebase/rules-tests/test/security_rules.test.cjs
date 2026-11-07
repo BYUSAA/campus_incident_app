@@ -379,13 +379,22 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       );
     });
 
-    it('rejects non-image content types', async function () {
+    it('rejects non-image and malformed image content types', async function () {
       const storage = student().storage();
-      const fileRef = ref(storage, 'incident_photos/student-1/document.txt');
+      const textRef = ref(storage, 'incident_photos/student-1/document.txt');
+      const malformedRef = ref(
+        storage,
+        'incident_photos/student-1/malformed.jpg',
+      );
 
       await assertFails(
-        uploadBytes(fileRef, new Uint8Array([1, 2, 3]), {
+        uploadBytes(textRef, new Uint8Array([1, 2, 3]), {
           contentType: 'text/plain',
+        }),
+      );
+      await assertFails(
+        uploadBytes(malformedRef, new Uint8Array([1, 2, 3]), {
+          contentType: 'image/jpeg;malicious=true',
         }),
       );
     });
