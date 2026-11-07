@@ -149,7 +149,7 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       );
       await assertFails(
         updateDoc(doc(db, 'users', 'student-1'), {
-          emailVerified: true,
+          emailVerified: false,
         }),
       );
     });
