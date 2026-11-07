@@ -1,17 +1,15 @@
 # Device integration tests
 
-Integration tests exercise the app in a running Flutter environment. They can initialize Firebase and require a configured Android device or emulator.
+Integration tests exercise the Flutter app in a live Android emulator or physical device. The current smoke test initializes Firebase and needs the actual project configuration.
 
 ## Prerequisites
 
-- Android runner files generated with `flutter create --platforms=android .`.
-- Firebase options generated with `flutterfire configure --platforms=android`.
-- Firebase Authentication and other required Firebase products enabled.
+- Android runner generated with `tooling/bootstrap-android.ps1`.
+- Firebase options generated with `tooling/bootstrap-firebase.ps1`.
+- Email/Password Authentication, Firestore, and Storage enabled.
 - Android emulator or physical device visible to `flutter devices`.
 
 ## Run
-
-From the repository root:
 
 ```powershell
 flutter pub get
@@ -19,10 +17,10 @@ flutter devices
 flutter test integration_test/app_workflow_test.dart
 ```
 
-The current smoke test initializes Firebase and checks the signed-out navigation path. It is not yet a complete end-to-end test of registration, photo upload, student ownership, and staff moderation.
+The current test verifies the signed-out redirect to Login. It is narrower than the required full student/staff demo.
 
-## Test data safety
+## Safe test data
 
-Use dedicated test accounts and records. Do not use classmates' accounts or real incident information. Clean up test reports and uploaded images where appropriate. Never store passwords, tokens, Firebase service-account files, or private keys in the test source.
+Use dedicated test accounts and records. Do not use classmates' accounts or real incident information. Clean up test reports and uploaded photos when appropriate. Never store passwords, tokens, service-account JSON, or private keys in test source.
 
-Expand the integration suite as the real Firebase workflow becomes available and record actual outcomes in `docs/technical_report.md`.
+Record actual device details and test outcomes in `docs/technical_report.md`.

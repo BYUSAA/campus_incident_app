@@ -1,49 +1,50 @@
-# Android demonstration script (approximately 7–10 minutes)
+# Android demonstration script (7–10 minutes)
 
-Use a real Android emulator or physical device connected to the configured Firebase project. Create separate student and staff test accounts before recording. Do not show passwords, API keys, private user data, or unrelated Firebase records.
+Use a real Android emulator or physical device connected to the Firebase project configured for this assignment. Prepare separate verified student and administrator-assigned staff test accounts. Do not show passwords, API keys, service-account credentials, private user data, or unrelated Firebase records.
 
 ## 1. Introduction (30–45 seconds)
 
-Introduce the campus problem the app addresses. Explain that students can submit incident reports and follow their status, while authorized staff can review the incident queue and update reports.
+Introduce the campus problem the app addresses. Explain that students submit campus incidents and follow their progress, while authorized staff review reports and update their status.
 
-## 2. Student account registration (about 1 minute)
+## 2. Student registration and email verification (about 1 minute)
 
-Open the app and show the registration screen. Register a test account using an `@alustudent.com` address. Point out the required name, email, and password validation. Open the verification email and complete the verification process.
+Show registration with a valid `@alustudent.com` test email. Point out the name, email, and password validation. Open the verification email and verify the account. Explain that incident operations require a verified ALU address.
 
-## 3. Student sign-in and home screen (about 45 seconds)
+## 3. Student sign-in and dashboard (about 45 seconds)
 
-Sign in with the verified test account. Show the home screen and explain that the report summary is calculated from the reports currently loaded for this account.
+Sign in with the verified student account. Show the dashboard and report summary. Explain that the student feed is restricted to the signed-in user's own reports.
 
-## 4. Create an incident (about 1–1.5 minutes)
+## 4. Submit an incident with a photo (about 1–1.5 minutes)
 
-Open the incident form. Select a category, enter a clear title, description, and campus location. Attach a photo from the gallery or camera and submit the report. Explain that the image is stored in Firebase Storage and the report metadata is stored in Cloud Firestore.
+Open the incident form. Select a category, enter a concise title, description, and campus location. Attach a real photo using the camera or gallery and submit. Explain that the image is uploaded to Firebase Storage and report metadata is stored in Cloud Firestore.
 
 ## 5. Browse, search, and filter (about 1 minute)
 
-Open the reports list. Search by a title, description, category, or location. Use the status filter. Show that the student account sees only its own reports.
+Open the report list. Search by title, description, category, or location, then filter by status. Show that a student account cannot browse another student's report.
 
-## 6. Open report details (about 45 seconds)
+## 6. Inspect report details (about 45 seconds)
 
-Open the newly submitted report. Show the image, report information, creation date, location, and status timeline. While it remains Submitted, show how the owner can edit or delete the report.
+Open the newly submitted report. Show the image, category, description, location, creation date, and status timeline. While the report is still `Submitted`, show the owner's edit/delete controls.
 
-## 7. Staff review and status update (about 1–1.5 minutes)
+## 7. Staff review and status progression (about 1.5 minutes)
 
-Sign out. Sign in with the separate staff test account whose `users/{uid}.role` field has been assigned to `staff` by the Firebase project administrator. Show the staff dashboard and open the submitted report. Change its status to In Progress and then Resolved, explaining that the student can see the updated status on the next report refresh.
+Sign out and sign in with the separate verified staff account whose `users/{uid}.role` field was assigned by a trusted Firebase administrator. Show the staff queue. Open the student's test report and advance it from `Submitted` to `In Progress`, then to `Resolved`. Explain that staff cannot move status backwards and that the student sees the updated status through the Firestore feed.
 
 ## 8. Firebase records and security (about 1 minute)
 
-Show the Authentication account, the corresponding `users/{uid}` profile, the incident document, and the uploaded image path. Explain that Firestore and Storage rules enforce the role and ownership checks independently of the UI. Hide private emails, user IDs, and project identifiers in the recording.
+Show the Firebase Authentication test account, its user profile document, the incident document, and the uploaded photo path. Explain that Firestore and Storage rules enforce verified-email, ownership, and staff-role checks independently of route visibility. Hide emails, UIDs, download tokens, and project identifiers that should not be public.
 
 ## 9. Architecture and conclusion (about 45 seconds)
 
-Briefly explain the flow: Flutter screen → Provider → Repository → Firebase service. Mention email verification, student/staff role separation, report ownership, optional photo uploads, and status tracking. Conclude with the main benefit to campus reporting.
+Explain the main flow: Flutter screen → Provider → Repository → Firebase service. Mention email verification, ownership, optional photo storage, forward-only status progression, and the separation between student and staff permissions. Conclude with the benefit to campus issue reporting.
 
 ## Recording checklist
 
-- [ ] Use the actual running Android app.
-- [ ] Show a student report being saved and retrieved from Firestore.
-- [ ] Show the optional photo upload working.
-- [ ] Show search and status filtering.
-- [ ] Show a separate staff account changing the report status.
-- [ ] Keep credentials and personal data hidden.
-- [ ] Upload the video and add its accessible URL to `docs/technical_report.md`.
+- [ ] Record on the real Android app, not a browser-only build.
+- [ ] Show registration, verification, and sign-in.
+- [ ] Show a report saved to Firestore with a photo uploaded to Storage.
+- [ ] Show browse/search/filter and incident details.
+- [ ] Show the staff account progressing the report status.
+- [ ] Show the updated status in the student account.
+- [ ] Keep private information and credentials hidden.
+- [ ] Upload the recording and add its accessible URL to `docs/technical_report.md`.

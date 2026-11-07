@@ -1,38 +1,109 @@
-name: Flutter quality checks
+name: Flutter and Android quality checks
 
 on:
   push:
     branches:
       - main
-      - chatgpt-access-check
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: flutter-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  analyze-and-test:
+  flutter:
+    name: Analyze, test, and build Android
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Set up Java for Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.2'
           cache: true
 
-      - name: Install dependencies
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          dart --version
+          java -version
+
+      - name: Generate Android runner for CI build
+        run: flutter create --platforms=android --org com.byusa .
+
+      - name: Install Flutter dependencies
         run: flutter pub get
 
       - name: Format Dart sources
-        run: dart format lib test
+        run: dart format lib test integration_test
 
-      - name: Analyze
+      - name: Analyze Flutter code
         run: flutter analyze
 
       - name: Run unit and widget tests
-        run: flutter test
+        run: flutter test --coverage
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: campus-incident-reporter-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Flutter coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-coverage
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 7
+
+  firebase-rules:
+    name: Firebase Firestore and Storage rule tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install rule-test dependencies
+        working-directory: firebase/rules-tests
+        run: npm install --no-audit --no-fund
+
+      - name: Run Firebase Emulator security tests
+        run: |
+          npx --yes firebase-tools emulators:exec \
+            --project demo-campus-incident-reporter \
+            --only firestore,storage \
+            "npm --prefix firebase/rules-tests test"

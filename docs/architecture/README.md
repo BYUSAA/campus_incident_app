@@ -1,28 +1,28 @@
 # Application architecture
 
-Campus Incident Reporter separates presentation, state, application workflows, and Firebase access. Screens should not call Firebase SDKs directly; each layer has a focused responsibility.
+Campus Incident Reporter separates presentation, state, application workflows, Firebase access, and data models. Screens collect input and render state; providers coordinate shared state; repositories coordinate workflows; services isolate Firebase SDK operations.
 
 ## Layers
 
 | Layer | Location | Responsibility |
 | --- | --- | --- |
-| Presentation | `lib/features/`, `lib/shared/` | Screens, forms, report cards, navigation |
+| Presentation | `lib/features/`, `lib/shared/` | Screens, forms, reusable widgets, navigation |
 | State | `lib/providers/` | ChangeNotifier state, loading/error state, stream lifecycle |
-| Application workflows | `lib/repositories/` | Registration, profile loading, incident creation/editing/deletion |
-| Data services | `lib/services/` | Firebase Authentication, Firestore, Storage |
-| Data models | `lib/models/` | User and incident data objects |
+| Application workflows | `lib/repositories/` | Authentication and incident operations |
+| Firebase adapters | `lib/services/` | Firebase Authentication, Firestore, Storage |
+| Data models | `lib/models/` | Typed user and incident mapping |
 | Cross-cutting | `lib/core/` | Routing, constants, validation, errors, themes |
 
-## Registration and sign-in
+## Authentication and profile loading
 
 ```text
-RegisterScreen / LoginScreen
+Login/Register screens
           |
           v
-      AuthProvider
+     AuthProvider
           |
           v
-     AuthRepository
+    AuthRepository
        /       \
       v         v
  Firebase Auth  UserRepository
@@ -34,9 +34,9 @@ RegisterScreen / LoginScreen
  Firebase       users/{uid}
 ```
 
-The authentication provider observes Firebase Auth state. The router waits for initial session/profile loading before routing a user to Login, email verification, student pages, or staff pages.
+The authentication provider listens for Firebase Auth state changes. A monotonically increasing event version prevents an older profile request from restoring a previous user after sign-out or a later Auth event. Protected routes remain in the splash state until profile loading completes.
 
-## Incident submission with an optional photo
+## Incident submission
 
 ```text
 IncidentForm
@@ -54,23 +54,26 @@ StorageService    FirestoreService
 Firebase Storage   Cloud Firestore
 ```
 
-The image is uploaded under `incident_photos/{uid}/`. The image URL and report metadata are saved to the incident document.
+The optional photo is uploaded under `incident_photos/{uid}/`. Its URL and report metadata are saved in the incident document. If Firestore creation fails, the repository attempts to remove the uploaded object. After a report is deleted, photo cleanup is attempted and logged separately so a temporary Storage failure does not falsely report that the Firestore deletion itself failed.
 
 ## Live updates and staff moderation
 
-Firestore snapshot streams are mapped to `Incident` objects by the repository. The provider subscribes, notifies the UI when data changes, and cancels its subscription when the selected stream changes or the provider is disposed.
+Firestore snapshot streams are mapped to `Incident` objects by the repository. The provider subscribes, notifies listening screens when new data arrives, clears prior user data when switching feeds, ignores events from superseded subscriptions, and cancels the active subscription when disposed.
 
-The router uses the loaded user profile role to protect staff navigation. Firestore and Storage rules independently verify the signed-in user's email, role, and report ownership. The route guard is a navigation aid, not the security boundary.
+Staff status progression is forward-only: `Submitted` → `In Progress` → `Resolved`. The status control and repository validate transitions for usability; Firestore rules remain the authoritative backend restriction.
+
+Student reads are scoped to report ownership. Student edits and deletes are allowed only while the report remains `Submitted`. Staff access uses the trusted role stored in `users/{uid}`. Firestore and Storage rules enforce authorization independently of the router.
 
 ## Diagram source
 
-The editable Mermaid diagram is [architecture_diagram.mmd](architecture_diagram.mmd). GitHub renders Mermaid in Markdown. Export it to PNG or SVG only when an external report format specifically requires an image.
+The editable Mermaid diagram is [architecture_diagram.mmd](architecture_diagram.mmd).
 
 ## Design rules
 
-- New accounts are created with the `student` role.
-- Staff access must be granted by trusted Firebase administration.
-- Firebase Authentication is authoritative for email verification.
-- Queries must include ownership constraints required by Firestore rules.
-- The incident model reads both `imageUrl` and legacy `photoUrls` records.
-- Providers expose loading/error state and manage subscriptions.
+- New accounts are created as `student`.
+- Staff access is assigned by trusted Firebase administration only.
+- Firebase Auth token claims are authoritative for email verification.
+- Student incident queries include the `reportedBy` ownership filter.
+- Report field limits match Flutter validation and Firestore rules.
+- Photos are stored under the owning user's UID.
+- Providers manage subscription lifecycle and ignore stale events.

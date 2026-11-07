@@ -23,11 +23,30 @@ class AuthRepository {
     required String password,
   }) async {
     final normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.endsWith(AppConstants.aluStudentDomain)) {
-      throw ArgumentError('Please register with your @alustudent.com email address.');
+    final atIndex = normalizedEmail.indexOf('@');
+    final hasValidEmailShape = atIndex > 0 &&
+        atIndex == normalizedEmail.lastIndexOf('@') &&
+        normalizedEmail.lastIndexOf('.') > atIndex;
+
+    if (!hasValidEmailShape ||
+        normalizedEmail.length > 254 ||
+        !normalizedEmail.endsWith(AppConstants.aluStudentDomain)) {
+      throw ArgumentError(
+        'Please register with a valid @alustudent.com email address.',
+      );
     }
-    if (name.trim().isEmpty) {
-      throw ArgumentError('Your full name is required.');
+
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty || normalizedName.length > 80) {
+      throw ArgumentError(
+        'Your name must be between 1 and 80 characters.',
+      );
+    }
+
+    if (password.length < 6) {
+      throw ArgumentError(
+        'Your password must be at least 6 characters.',
+      );
     }
 
     final credential = await _auth.register(
@@ -36,46 +55,63 @@ class AuthRepository {
     );
     final firebaseUser = credential.user;
     if (firebaseUser == null) {
-      throw StateError('Firebase did not return the newly created account.');
+      throw StateError(
+        'Firebase did not return the newly created account.',
+      );
     }
 
-    await firebaseUser.updateDisplayName(name.trim());
-    await _users.create(
-      AppUser(
-        uid: firebaseUser.uid,
-        name: name.trim(),
-        email: normalizedEmail,
-        role: 'student',
-      ),
-    );
-    await _verification.send(firebaseUser);
+    try {
+      await firebaseUser.updateDisplayName(normalizedName);
+      await _users.create(
+        AppUser(
+          uid: firebaseUser.uid,
+          name: normalizedName,
+          email: normalizedEmail,
+          role: 'student',
+        ),
+      );
+      await _verification.send(firebaseUser);
+    } catch (_) {
+      // Avoid leaving an Auth account without its required profile.
+      try {
+        await firebaseUser.delete();
+      } catch (_) {
+        await _auth.logout();
+      }
+      rethrow;
+    }
   }
 
   Future<AppUser?> login(String email, String password) async {
     await _auth.login(email, password);
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) {
-      throw StateError('Firebase did not return the signed-in account.');
+      throw StateError(
+        'Firebase did not return the signed-in account.',
+      );
     }
 
     await firebaseUser.reload();
     final refreshedUser = _auth.currentUser;
     if (refreshedUser == null || !refreshedUser.emailVerified) {
       await _auth.logout();
-      throw StateError('Verify your ALU email address before signing in.');
+      throw StateError(
+        'Verify your ALU email address before signing in.',
+      );
     }
 
     final profile = await loadProfile(refreshedUser.uid);
     if (profile == null) {
-      throw StateError('Your account profile is missing. Contact the project administrator.');
+      await _auth.logout();
+      throw StateError(
+        'Your account profile is missing. Contact the project administrator.',
+      );
     }
     return profile;
   }
 
   Future<void> resendVerification() => _auth.sendVerificationEmail();
-
   Future<void> logout() => _auth.logout();
-
   Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
 
   Future<bool> refreshVerification() async {

@@ -27,6 +27,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   String? _errorMessage;
+  int _authStateVersion = 0;
 
   AppUser? get user => _user;
   User? get firebaseUser => _firebaseUser;
@@ -37,7 +38,9 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> _handleAuthStateChanged(User? firebaseUser) async {
+    final version = ++_authStateVersion;
     _firebaseUser = firebaseUser;
+
     if (firebaseUser == null) {
       _user = null;
       _isInitialized = true;
@@ -46,14 +49,24 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
 
+    _isInitialized = false;
+    _user = null;
+    notifyListeners();
+
     try {
-      _user = await _repository.loadProfile(firebaseUser.uid);
+      final profile = await _repository.loadProfile(firebaseUser.uid);
+      if (version != _authStateVersion) return;
+      _user = profile;
       _errorMessage = null;
     } catch (error) {
+      if (version != _authStateVersion) return;
+      _user = null;
       _errorMessage = error.toString();
     } finally {
-      _isInitialized = true;
-      notifyListeners();
+      if (version == _authStateVersion) {
+        _isInitialized = true;
+        notifyListeners();
+      }
     }
   }
 
@@ -92,6 +105,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _repository.logout();
+    ++_authStateVersion;
     _firebaseUser = null;
     _user = null;
     _errorMessage = null;

@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/constants/incident_status.dart';
 import '../models/incident.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -58,7 +60,9 @@ class IncidentRepository {
         'assignedTo': null,
       });
     } catch (_) {
-      if (imageUrl != null) await _storage.deletePhotoByUrl(imageUrl);
+      if (imageUrl != null) {
+        await _deletePhotoBestEffort(imageUrl, 'failed report creation');
+      }
       rethrow;
     }
   }
@@ -83,27 +87,34 @@ class IncidentRepository {
         'location': incident.location.trim(),
         'imageUrl': newImageUrl,
         'photoUrls': photos,
-        'reporterName': incident.reporterName,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {
       if (photo != null && newImageUrl != null) {
-        await _storage.deletePhotoByUrl(newImageUrl);
+        await _deletePhotoBestEffort(newImageUrl, 'failed report update');
       }
       rethrow;
     }
 
     if (photo != null && oldImageUrl != null && oldImageUrl != newImageUrl) {
-      await _storage.deletePhotoByUrl(oldImageUrl);
+      await _deletePhotoBestEffort(oldImageUrl, 'replaced report photo');
     }
   }
 
-  Future<void> updateStatus(String id, String status) {
-    const allowed = ['Submitted', 'In Progress', 'Resolved'];
-    if (!allowed.contains(status)) {
-      throw ArgumentError.value(status, 'status', 'Unsupported incident status.');
+  Future<void> updateStatus(String id, String status) async {
+    final current = await getById(id);
+    if (current == null) {
+      throw StateError('The incident no longer exists.');
     }
-    return _firestore.updateIncident(id, {
+    if (!IncidentStatus.canTransition(current.status, status)) {
+      throw ArgumentError.value(
+        status,
+        'status',
+        'Incident status can only move forward through the workflow.',
+      );
+    }
+
+    await _firestore.updateIncident(id, {
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -118,7 +129,20 @@ class IncidentRepository {
         ? incident.photoUrls
         : (incident.imageUrl == null ? <String>[] : <String>[incident.imageUrl!]);
     for (final url in photos) {
+      await _deletePhotoBestEffort(url, 'deleted report photo');
+    }
+  }
+
+  Future<void> _deletePhotoBestEffort(String url, String reason) async {
+    try {
       await _storage.deletePhotoByUrl(url);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Photo cleanup failed after $reason.',
+        name: 'IncidentRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 }
