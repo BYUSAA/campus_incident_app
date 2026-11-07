@@ -104,13 +104,13 @@ The rules enforce the following behavior:
 - Staff can read the incident queue when the trusted profile has the staff role.
 - Students can create reports only for themselves and only with initial status Submitted.
 - The backend validates required report content, permitted categories, and the same text length limits used by the form.
-- Students can edit their own report content only while the stored status is still Submitted. They cannot change ownership, creation time, or status.
-- Staff updates are restricted to status, assignment, and update timestamp.
-- Users cannot change their own role.
+- Students can edit or delete their own report only while the stored status is still Submitted. They cannot change ownership, reporter identity, creation time, or status.
+- Staff updates are limited to status, assignment, and update timestamp. Status progression is forward-only: Submitted to In Progress to Resolved.
+- Users cannot change their own role or verification metadata.
 
 ### 5.2 Storage authorization
 
-Incident photographs are stored under incident_photos/{uid}/{fileName}. The rules restrict upload and update to the signed-in owner, require supported image content types, and enforce a file size below 8 MB. The owner and authorized staff can read the image. Storage rules are separate from the Flutter interface and must be deployed to the intended Firebase project.
+Incident photographs are stored under incident_photos/{uid}/{fileName}. The rules restrict upload and update to the signed-in owner, require supported image content types, and enforce a file size greater than zero and below 8 MB. The owner and authorized staff can read the image; staff may also delete photo evidence when moderating a report. Storage rules are separate from the Flutter interface and must be deployed to the same Firebase project as the Firestore staff-role documents.
 
 ### 5.3 Administrative setup
 
@@ -151,7 +151,7 @@ Use images from the real app and the student's Firebase project only. Hide email
 
 ## 8. Testing strategy and evidence
 
-The repository contains unit and widget tests for incident model mapping, validation, Provider stream behavior using a fake repository, and incident-card rendering. An integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
+The repository contains unit and widget tests for incident model mapping, email/name/report validation, forward-only status transitions, Provider feed switching and report actions using a fake repository, incident form required fields, and incident-card rendering. A Firebase Emulator Suite test package verifies Firestore and Storage permissions independently of the UI. An Android integration smoke test is included for the signed-out navigation path. That integration test initializes Firebase and therefore requires real project options and an Android target.
 
 Run these commands from the project root after Android and Firebase configuration:
 
@@ -171,7 +171,7 @@ The table below must be completed with actual results from the student's compute
 | Dart formatting | Not verified in this review | Run formatter and inspect the diff |
 | Static analysis | Latest GitHub Actions run on the default branch was marked failed | Inspect workflow failure and rerun after fixes |
 | Unit/widget tests | Not verified in this review | Run flutter test and record the result |
-| Android debug build | Blocked until native Android runner files are generated | Run flutter create --platforms=android ., then build |
+| Android debug build | Blocked until native Android runner files are generated | Run tooling/bootstrap-android.ps1, then build |
 | Firebase student workflow | Not verified against a live Firebase project | Register, verify, sign in, and submit a test report |
 | Photo upload | Not verified against a live Storage bucket | Upload and display a real test photo |
 | Staff workflow | Not verified against a staff account | Assign a staff role using Firebase administration and update a report |
@@ -183,7 +183,7 @@ The current automated tests do not replace backend security testing. Additional 
 
 ## 9. Challenges and design trade-offs
 
-The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The native Android runner also needs to be generated with the installed Flutter SDK.
+The main setup dependency is the use of project-specific Firebase configuration. It is not safe to invent Firebase app IDs, API keys, or sender IDs, so the repository keeps a fail-fast placeholder until FlutterFire generates options for the actual project. The Android runner also needs to be generated with the installed Flutter SDK. Windows scripts in the `tooling/` directory automate these steps and require the developer to select the actual Firebase project. The deployment script asks for explicit confirmation before publishing rules.
 
 The application uses student-owned report queries to protect student privacy. Staff access is role-based and depends on a trusted administrator action. The current search and status filtering operate on the data currently loaded into the client; pagination and server-side filtering would be important for a larger deployment. The theme preference currently lasts for the active app session rather than being stored across restarts. Push notifications, offline submission, and a full assignment/dispatch workflow are not implemented.
 
@@ -191,7 +191,7 @@ The application uses student-owned report queries to protect student privacy. St
 
 The project demonstrates why client-side navigation checks and backend authorization must be treated separately. Provider stream subscriptions help keep screens in sync with Firestore changes, while repositories and service classes isolate persistence from presentation. Form validation should match backend constraints so that accepted UI input is also accepted by Firestore rules.
 
-Future improvements include Firebase Emulator security tests, paginated incident feeds, notification when report status changes, persistent appearance preferences, and a trusted staff assignment interface.
+The repository now includes Firebase Emulator Suite security tests for student ownership, role self-promotion, verification, status lifecycle, and photo access. Further improvements include paginated incident feeds, notifications when report status changes, persistent appearance preferences, and a trusted staff assignment interface.
 
 ## 11. Project repository and demonstration video
 
