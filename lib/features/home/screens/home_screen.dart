@@ -16,18 +16,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final user = context.read<AuthProvider>().user;
-      if (user != null) {
-        context.read<IncidentProvider>().fetchUserIncidents(user.uid);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final incidents = context.watch<IncidentProvider>();
@@ -41,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+            context.read<IncidentProvider>().refresh();
           },
           child: ListView(
             padding: const EdgeInsets.all(AppConstants.paddingL),
