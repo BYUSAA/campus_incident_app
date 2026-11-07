@@ -5,8 +5,8 @@ The rubric totals **55 points**. The technical report PDF, GitHub repository, an
 ## Local Android and Firebase setup
 
 - [ ] Run `flutter doctor -v` and confirm Android Studio, SDK, and emulator/device are ready.
-- [ ] Run `tooling/bootstrap-android.ps1` to generate the Android runner.
-- [ ] Confirm the actual application ID in `android/app/build.gradle.kts` and register it in Firebase Console.
+- [ ] Confirm the committed Android manifest, `MainActivity.kt`, and Gradle files exist.
+- [ ] Confirm the Android application ID is `com.byusa.campus_incident_reporter` and minimum SDK is 24; register this ID in Firebase Console.
 - [ ] Enable Email/Password in Firebase Authentication.
 - [ ] Create/enable Cloud Firestore and Firebase Storage.
 - [ ] Run `tooling/bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID`.
@@ -67,4 +67,4 @@ The rubric totals **55 points**. The technical report PDF, GitHub repository, an
 
 ## Important truth about evidence
 
-Android runner files and Firebase options are generated in the student's local environment. Screenshots, Firebase records, actual test outcomes, and the video must come from the real configured app. Do not replace them with fabricated evidence. A GitHub Actions workflow is configured to generate an Android runner temporarily and build a debug APK in CI, but that does not generate the local Android project or replace the real-device demonstration.
+The Android runner is committed in the repository. Firebase options are generated for the selected Firebase project in the student's environment. Screenshots, Firebase records, actual test outcomes, and the video must come from the real configured app. Do not replace them with fabricated evidence. GitHub Actions is configured to analyze, test, and build the Android APK, but workflow runs currently fail before publishing usable step logs; the result does not replace a local build or real-device demonstration.
