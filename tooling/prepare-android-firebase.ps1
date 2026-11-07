@@ -91,8 +91,8 @@ try {
     Write-Host 'Next: connect an Android emulator/device and run flutter run.'
 }
 catch {
-    Write-Error $_
-    exit 1
+    Write-Error -ErrorAction Continue $_
+    throw
 }
 finally {
     Pop-Location
