@@ -50,13 +50,13 @@ describe('Campus Incident Reporter Firebase security rules', function () {
       projectId,
       firestore: {
         rules: readFileSync(
-          path.resolve(__dirname, '../../../firestore.rules'),
+          path.resolve(__dirname, '../../firestore.rules'),
           'utf8',
         ),
       },
       storage: {
         rules: readFileSync(
-          path.resolve(__dirname, '../../../storage.rules'),
+          path.resolve(__dirname, '../../storage.rules'),
           'utf8',
         ),
       },
