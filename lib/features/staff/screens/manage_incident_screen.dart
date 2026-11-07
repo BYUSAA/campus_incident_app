@@ -9,7 +9,10 @@ import '../../../providers/incident_provider.dart';
 import '../widgets/status_update_control.dart';
 
 class ManageIncidentScreen extends StatefulWidget {
-  const ManageIncidentScreen({super.key, required this.incident});
+  const ManageIncidentScreen({
+    super.key,
+    required this.incident,
+  });
 
   final Incident incident;
 
@@ -21,16 +24,20 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
   bool _isUpdating = false;
 
   Future<void> _updateStatus(String status) async {
+    if (_isUpdating) return;
     setState(() => _isUpdating = true);
+
     try {
-      await context.read<IncidentProvider>().updateStatus(widget.incident.id, status);
+      await context.read<IncidentProvider>().updateStatus(
+        widget.incident.id,
+        status,
+      );
       if (mounted) context.pop();
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update the status: $error')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update the status: $error')),
+      );
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
@@ -39,6 +46,9 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
   @override
   Widget build(BuildContext context) {
     final incident = widget.incident;
+    final imageUrl = incident.imageUrl ??
+        (incident.photoUrls.isEmpty ? null : incident.photoUrls.first);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Manage Incident')),
       body: SingleChildScrollView(
@@ -46,13 +56,19 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(incident.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              incident.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
             Text('Reported by: ${incident.reporterName ?? incident.reportedBy}'),
             const SizedBox(height: 4),
             Text(
               DateFormatter.formatDateTime(incident.createdAt),
-              style: const TextStyle(color: AppConstants.greyText, fontSize: 12),
+              style: const TextStyle(
+                color: AppConstants.greyText,
+                fontSize: 12,
+              ),
             ),
             const Divider(height: 32),
             const Text('Category', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -62,12 +78,25 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
             Text(incident.location),
             const SizedBox(height: 16),
             const Text('Description', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
             Text(incident.description, style: const TextStyle(height: 1.5)),
-            if (incident.imageUrl != null) ...[
+            if (imageUrl != null) ...[
               const SizedBox(height: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppConstants.radiusM),
-                child: Image.network(incident.imageUrl!, height: 180, fit: BoxFit.cover),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 190,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 190,
+                    width: double.infinity,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image_outlined, size: 36),
+                  ),
+                ),
               ),
             ],
             const Divider(height: 32),
@@ -75,13 +104,13 @@ class _ManageIncidentScreenState extends State<ManageIncidentScreen> {
             const SizedBox(height: 12),
             StatusUpdateControl(
               currentStatus: incident.status,
-              onStatusChanged: _isUpdating ? (_) {} : _updateStatus,
+              enabled: !_isUpdating,
+              onStatusChanged: _updateStatus,
             ),
-            if (_isUpdating)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: LinearProgressIndicator(),
-              ),
+            if (_isUpdating) ...[
+              const SizedBox(height: 12),
+              const LinearProgressIndicator(),
+            ],
           ],
         ),
       ),
