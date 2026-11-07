@@ -33,12 +33,8 @@ try {
         throw 'Firebase CLI login check failed. Run firebase login and retry.'
     }
 
-    Write-Host "Selecting Firebase project: $ProjectId" -ForegroundColor Cyan
-    firebase use $ProjectId
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Could not select this Firebase project. Confirm its ID and your account permissions.'
-    }
-
+    # Use explicit --project arguments throughout so the script does not
+    # depend on a local .firebaserc alias or change the user's active project.
     Write-Host 'Configuring FlutterFire for Android...' -ForegroundColor Cyan
     dart pub global activate flutterfire_cli
     if ($LASTEXITCODE -ne 0) {
