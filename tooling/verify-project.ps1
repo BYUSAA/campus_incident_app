@@ -9,7 +9,8 @@ function Invoke-CheckedCommand {
         [Parameter(Mandatory = $true)][scriptblock]$Command
     )
 
-    Write-Host "`n========== $Name ==========" -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host "========== $Name ==========" -ForegroundColor Cyan
     & $Command
     if ($LASTEXITCODE -ne 0) {
         throw "$Name failed with exit code $LASTEXITCODE. Fix this step before continuing."
@@ -21,6 +22,25 @@ try {
         if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
             throw "$tool was not found on PATH. Install the required tool and reopen PowerShell."
         }
+    }
+
+    Write-Host ''
+    Write-Host '========== Android JDK selection ==========' -ForegroundColor Cyan
+    $doctorOutput = flutter doctor -v 2>&1 | Out-String
+    $javaVersionMatch = [regex]::Match(
+        $doctorOutput,
+        '(?im)Java version[^\r\n]*?\b(\d+)\.'
+    )
+
+    if ($javaVersionMatch.Success) {
+        $androidJavaMajor = [int]$javaVersionMatch.Groups[1].Value
+        if ($androidJavaMajor -notin @(17, 21)) {
+            throw "Flutter is using JDK $androidJavaMajor for Android. This project supports JDK 17 or 21. Install one of those versions, run flutter config --jdk-dir=C:\path\to\jdk-17-or-21, restart VS Code, and confirm with flutter doctor -v."
+        }
+        Write-Host "Flutter Android toolchain is using supported JDK $androidJavaMajor." -ForegroundColor Green
+    }
+    else {
+        Write-Warning 'Could not identify the Android JDK from flutter doctor -v. Review the Android toolchain section manually before building.'
     }
 
     $androidManifest = Join-Path $repositoryRoot 'android/app/src/main/AndroidManifest.xml'
@@ -57,7 +77,8 @@ try {
 
     Invoke-CheckedCommand -Name 'Android debug APK build' -Command { flutter build apk --debug }
 
-    Write-Host "`n========== Android integration smoke test ==========" -ForegroundColor Cyan
+    Write-Host ''
+    Write-Host '========== Android integration smoke test ==========' -ForegroundColor Cyan
     $deviceOutput = flutter devices --machine
     if ($LASTEXITCODE -ne 0) {
         throw 'Could not query Flutter devices.'
@@ -73,7 +94,8 @@ try {
         Write-Warning 'No Android emulator or device is connected. Integration smoke test was skipped; connect an Android target and run this script again.'
     }
 
-    Write-Host "`nALL AVAILABLE CHECKS PASSED." -ForegroundColor Green
+    Write-Host ''
+    Write-Host 'ALL AVAILABLE CHECKS PASSED.' -ForegroundColor Green
     Write-Host 'APK: build/app/outputs/flutter-apk/app-debug.apk'
     Write-Host 'Coverage: coverage/lcov.info'
     Write-Host 'Commit pubspec.lock and firebase/rules-tests/package-lock.json after reviewing dependency resolution.'

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class FirebaseSetupErrorApp extends StatelessWidget {
   const FirebaseSetupErrorApp({
@@ -8,8 +9,26 @@ class FirebaseSetupErrorApp extends StatelessWidget {
 
   final Object error;
 
+  static const _applicationId = 'com.byusa.campus_incident_reporter';
+  static const _setupCommand =
+      r'.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID';
+
+  bool get _missingProjectOptions => error is UnsupportedError;
+
+  Future<void> _copySetupCommand(BuildContext context) async {
+    await Clipboard.setData(const ClipboardData(text: _setupCommand));
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Firebase setup command copied.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isMissingOptions = _missingProjectOptions;
+
     return MaterialApp(
       title: 'Campus Incident Reporter setup',
       debugShowCheckedModeBanner: false,
@@ -25,58 +44,171 @@ class FirebaseSetupErrorApp extends StatelessWidget {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
+                constraints: const BoxConstraints(maxWidth: 560),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(
-                      Icons.cloud_off_outlined,
+                    Icon(
+                      isMissingOptions
+                          ? Icons.cloud_off_outlined
+                          : Icons.cloud_sync_outlined,
                       size: 64,
-                      color: Color(0xFF6B4EFF),
+                      color: colorScheme.primary,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Firebase setup is incomplete',
+                    Text(
+                      isMissingOptions
+                          ? 'Connect your Firebase project'
+                          : 'Firebase could not start',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'The app could not connect to its Firebase configuration. '
-                      'From the project root, generate the Android configuration '
-                      'with the FlutterFire CLI, then restart the app.',
+                    Text(
+                      isMissingOptions
+                          ? 'This repository does not contain configuration for a real '
+                              'Firebase project yet. Project IDs and app credentials '
+                              'are intentionally not invented or shared in source control. '
+                              'Generate the Android options for your own Firebase project '
+                              'using the steps below.'
+                          : 'Firebase initialization failed before the app could open. '
+                              'Check the diagnostic details below, then confirm that the '
+                              'Android app is registered in the selected Firebase project.',
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
+                    const _SetupStep(
+                      number: '1',
+                      title: 'Create or select your Firebase project',
+                      description:
+                          'In Firebase Console, enable Email/Password Authentication, '
+                          'Cloud Firestore, and Cloud Storage.',
+                    ),
+                    const SizedBox(height: 14),
+                    const _SetupStep(
+                      number: '2',
+                      title: 'Register the Android app',
+                      description: 'Use this exact Android application ID:',
+                    ),
+                    const SizedBox(height: 8),
+                    const _SelectableValue(value: _applicationId),
+                    const SizedBox(height: 14),
+                    const _SetupStep(
+                      number: '3',
+                      title: 'Generate the project configuration',
+                      description:
+                          'Run this command from the repository root in Windows PowerShell. '
+                          'Replace the placeholder with the Project ID shown in Firebase Console.',
+                    ),
+                    const SizedBox(height: 8),
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Padding(
                         padding: EdgeInsets.all(16),
                         child: SelectableText(
-                          'flutterfire configure --platforms=android',
+                          _setupCommand,
                           textAlign: TextAlign.center,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    FilledButton.icon(
+                      onPressed: () => _copySetupCommand(context),
+                      icon: const Icon(Icons.copy),
+                      label: const Text('Copy PowerShell command'),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SetupStep(
+                      number: '4',
+                      title: 'Restart the app',
+                      description:
+                          'When FlutterFire finishes successfully, stop the current '
+                          'app run, execute flutter pub get, and start it again with '
+                          'flutter run -d YOUR_DEVICE_ID.',
+                    ),
+                    const SizedBox(height: 20),
+                    Divider(color: colorScheme.outlineVariant),
                     Text(
-                      'Diagnostic: ${error.runtimeType}',
+                      'Diagnostic: \${error.runtimeType}',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (!isMissingOptions) ...[
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        error.toString(),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SetupStep extends StatelessWidget {
+  const _SetupStep({
+    required this.number,
+    required this.title,
+    required this.description,
+  });
+
+  final String number;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(radius: 15, child: Text(number)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(description),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectableValue extends StatelessWidget {
+  const _SelectableValue({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: SelectableText(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
     );

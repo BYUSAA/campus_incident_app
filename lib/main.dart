@@ -16,7 +16,11 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-  } catch (error) {
+  } catch (error, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('Firebase initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
     runApp(FirebaseSetupErrorApp(error: error));
     return;
   }
