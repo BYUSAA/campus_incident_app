@@ -87,7 +87,6 @@ class IncidentRepository {
         'location': incident.location.trim(),
         'imageUrl': newImageUrl,
         'photoUrls': photos,
-        'reporterName': incident.reporterName,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {
