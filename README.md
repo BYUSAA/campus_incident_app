@@ -13,18 +13,20 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 ## Student and staff workflows
 
 ### Students
-- Register with a valid `@alustudent.com` address and verify the email.
+- Register with a valid `@alustudent.com` address, verify the email, and reset a forgotten password.
 - Submit reports with title, description, category, location, and an optional photo.
 - Upload incident photos from the camera or gallery to Firebase Storage.
 - View, search, filter, and inspect their own reports.
-- Edit or delete their own report while its status is `Submitted`.
+- Edit or delete their own report while its status is `Submitted`, including replacing or removing an attached photo.
+- Update their profile display name without changing protected account fields.
+- Choose light/dark appearance; the preference is saved on the device.
 - Follow the status updates made by authorized staff.
 
 ### Authorized staff
 - Sign in with a separate verified ALU account assigned the `staff` role by a trusted Firebase administrator.
 - Review the campus incident queue.
 - Move report status forward: `Submitted` → `In Progress` → `Resolved`.
-- Moderate reports and remove associated evidence when necessary.
+- Moderate reports, progress each status in sequence, and delete a report with its associated evidence when necessary.
 
 There is no client-side role promotion. Firebase rules, not hidden navigation controls, enforce ownership and staff access.
 
@@ -249,7 +251,7 @@ Capture genuine screenshots from your configured Android app and Firebase Consol
 
 - Android runner files and Firebase options are generated on the developer's computer; they are not fabricated in this repository.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
-- Theme selection currently lasts for the app session and is not persisted.
+- Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
 - Push notifications, offline submission, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
 
