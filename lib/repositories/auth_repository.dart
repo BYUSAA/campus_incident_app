@@ -94,7 +94,7 @@ class AuthRepository {
     return profile;
   }
 
-  Future<void> resendVerification() => _auth.sendVerificationEmail();
+  Future<void> resendVerification() => _auth.sendVerificationEmail();\n\n  Future<void> sendPasswordResetEmail(String email) async {\n    final normalizedEmail = email.trim().toLowerCase();\n    final emailError = Validators.validateEmail(normalizedEmail);\n    if (emailError != null) throw ArgumentError(emailError);\n    await _auth.sendPasswordResetEmail(normalizedEmail);\n  }
   Future<void> logout() => _auth.logout();
   Future<AppUser?> loadProfile(String uid) => _users.getById(uid);
 
