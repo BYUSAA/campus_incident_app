@@ -172,7 +172,7 @@ The table below must be completed with actual results from the student's compute
 | Dart formatting | Not verified in this review | Run formatter and inspect the diff |
 | Static analysis | Latest GitHub Actions run on the default branch was marked failed | Inspect workflow failure and rerun after fixes |
 | Unit/widget tests | Not verified in this review | Run flutter test and record the result |
-| Android debug build | Blocked until native Android runner files are generated | Run tooling/bootstrap-android.ps1, then build |
+| Android native project | Committed in main with manifest, Kotlin MainActivity, Gradle files, application ID, and API 24 minimum | Verify local Android SDK/toolchain |\n| Android debug build | Not run in this review; Flutter/Dart SDK is unavailable here | Run `flutter build apk --debug` in the configured toolchain |
 | Firebase student workflow | Not verified against a live Firebase project | Register, verify, sign in, and submit a test report |
 | Photo upload | Not verified against a live Storage bucket | Upload and display a real test photo |
 | Staff workflow | Not verified against a staff account | Assign a staff role using Firebase administration and update a report |
