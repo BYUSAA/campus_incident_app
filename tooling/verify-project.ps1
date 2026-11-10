@@ -48,10 +48,26 @@ try {
         throw 'Android runner is missing. Run .\tooling\bootstrap-android.ps1 first.'
     }
 
+    # Firebase client options are needed to launch the live app and run the
+    # Firebase-connected device smoke test, but not to analyze Dart code,
+    # execute fake-backed unit/widget tests, run local rules emulators, or
+    # compile a debug APK. Keep those no-cost checks available before setup.
     $firebaseOptions = Join-Path $repositoryRoot 'lib/firebase_options.dart'
-    if (-not (Test-Path $firebaseOptions) -or
-        (Select-String -Path $firebaseOptions -SimpleMatch 'throw UnsupportedError' -Quiet)) {
-        throw 'Firebase options are not configured. Run .\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID first.'
+    $firebaseOptionsConfigured = $false
+    if (Test-Path $firebaseOptions) {
+        $optionsContent = Get-Content $firebaseOptions -Raw
+        $firebaseOptionsConfigured = (
+            $optionsContent -notmatch 'throw\s+UnsupportedError'
+            -and $optionsContent -match 'apiKey'
+            -and $optionsContent -match 'projectId'
+        )
+    }
+
+    if ($firebaseOptionsConfigured) {
+        Write-Host 'Firebase client options detected. The app can be tested against its configured Firebase project.' -ForegroundColor Green
+    }
+    else {
+        Write-Warning 'Firebase client options are still a setup placeholder. Local analysis, unit/widget tests, emulator security tests, and APK compilation will continue. The Firebase-connected device smoke test will be skipped.'
     }
 
     Invoke-CheckedCommand -Name 'Flutter dependency resolution' -Command { flutter pub get }
@@ -79,25 +95,35 @@ try {
 
     Write-Host ''
     Write-Host '========== Android integration smoke test ==========' -ForegroundColor Cyan
-    $deviceOutput = flutter devices --machine
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Could not query Flutter devices.'
-    }
-    $devices = @($deviceOutput | ConvertFrom-Json)
-    $androidDevice = $devices | Where-Object { $_.targetPlatform -like 'android-*' } | Select-Object -First 1
-    if ($null -ne $androidDevice) {
-        Invoke-CheckedCommand -Name 'Android signed-out navigation smoke test' -Command {
-            flutter test integration_test/app_workflow_test.dart -d $androidDevice.id
-        }
+    if (-not $firebaseOptionsConfigured) {
+        Write-Warning 'Skipped the Android integration smoke test because Firebase client options have not been generated. Run .\tooling\bootstrap-firebase.ps1 after signing in to Firebase, then rerun this script.'
     }
     else {
-        Write-Warning 'No Android emulator or device is connected. Integration smoke test was skipped; connect an Android target and run this script again.'
+        $deviceOutput = flutter devices --machine
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Could not query Flutter devices.'
+        }
+        $devices = @($deviceOutput | ConvertFrom-Json)
+        $androidDevice = $devices | Where-Object { $_.targetPlatform -like 'android-*' } | Select-Object -First 1
+        if ($null -ne $androidDevice) {
+            Invoke-CheckedCommand -Name 'Android signed-out navigation smoke test' -Command {
+                flutter test integration_test/app_workflow_test.dart -d $androidDevice.id
+            }
+        }
+        else {
+            Write-Warning 'No Android emulator or device is connected. Integration smoke test was skipped; connect an Android target and run this script again.'
+        }
     }
 
     Write-Host ''
-    Write-Host 'ALL AVAILABLE CHECKS PASSED.' -ForegroundColor Green
+    Write-Host 'ALL AVAILABLE LOCAL CHECKS PASSED.' -ForegroundColor Green
     Write-Host 'APK: build/app/outputs/flutter-apk/app-debug.apk'
     Write-Host 'Coverage: coverage/lcov.info'
+
+    if (-not $firebaseOptionsConfigured) {
+        Write-Warning 'The APK is compile-verified only. Live Firebase sign-in, Firestore operations, photo uploads, and on-device end-to-end behavior are not verified until Firebase is configured.'
+    }
+
     Write-Host 'Commit pubspec.lock and firebase/rules-tests/package-lock.json after reviewing dependency resolution.'
 }
 finally {
