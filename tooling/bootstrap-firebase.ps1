@@ -25,12 +25,44 @@ try {
         if ($LASTEXITCODE -ne 0) {
             throw 'Firebase CLI installation failed.'
         }
+
+        # Refresh this PowerShell process PATH. A global npm install can place
+        # firebase.cmd in the npm prefix, which may not be on the current PATH.
+        $npmGlobalPrefix = (& npm config get prefix 2>$null | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($npmGlobalPrefix)) {
+            throw 'Firebase CLI was installed, but npm did not return its global command directory. Open a new PowerShell window and retry.'
+        }
+        if (($env:Path -split ';') -notcontains $npmGlobalPrefix) {
+            $env:Path = "$npmGlobalPrefix;$env:Path"
+        }
     }
 
-    Write-Host 'Checking Firebase account access...' -ForegroundColor Cyan
-    firebase login:list
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Firebase CLI login check failed. Run firebase login and retry.'
+    if (-not (Get-Command firebase -ErrorAction SilentlyContinue)) {
+        throw 'Firebase CLI is not available in this PowerShell session. Open a new PowerShell window and retry.'
+    }
+
+    Write-Host "Checking access to Firebase project '$ProjectId'..." -ForegroundColor Cyan
+    $projectListOutput = firebase projects:list --json 2>&1
+    $projectListExitCode = $LASTEXITCODE
+
+    if ($projectListExitCode -ne 0) {
+        Write-Host 'Firebase authentication is required. Complete the Google sign-in window.' -ForegroundColor Yellow
+        firebase login
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Firebase login did not complete successfully.'
+        }
+
+        $projectListOutput = firebase projects:list --json 2>&1
+        $projectListExitCode = $LASTEXITCODE
+    }
+
+    if ($projectListExitCode -ne 0) {
+        throw 'The Firebase CLI could not list projects. Confirm that the signed-in Google account has access to INZIRA (inzira-498621).'
+    }
+
+    $projectListText = $projectListOutput | Out-String
+    if ($projectListText -notmatch [regex]::Escape($ProjectId)) {
+        throw "The signed-in Google account cannot see Firebase project '$ProjectId'. Grant this account access to the project, then rerun the script."
     }
 
     # Use explicit --project arguments throughout so the script does not
@@ -62,7 +94,8 @@ try {
     }
 
     Write-Host 'Firebase options generated.' -ForegroundColor Green
-    Write-Host 'Ensure Email/Password Authentication, Cloud Firestore and Cloud Storage are enabled in Firebase Console.'
+    Write-Host 'Ensure Email/Password Authentication is enabled and Cloud Firestore is created in Firebase Console.'
+    Write-Host 'Cloud Storage is optional and requires Blaze billing plus a provisioned bucket; it is not required to start the app or submit reports without photos.'
     Write-Host ''
     Write-Host 'The selected CLI project must be the same project used by FlutterFire.'
     Write-Host 'Rules and indexes are not deployed yet.'
