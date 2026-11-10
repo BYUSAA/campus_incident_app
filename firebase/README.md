@@ -38,19 +38,22 @@ Rules enforce verified `@alustudent.com` email addresses for incident and photo 
 
 ## Configure a Firebase project
 
-1. Create or select the Firebase project.
+1. Use the existing Firebase project **INZIRA**, project ID `inzira-498621` (the repository's `.firebaserc` default).
 2. In **Authentication → Sign-in method**, enable **Email/Password**.
 3. Create the Cloud Firestore database.
 4. Enable the default Cloud Storage bucket.
-5. Generate Android project files and record its application ID.
-6. Register that Android application ID in Firebase Console.
+5. Confirm the committed Android application ID is `com.byusa.campus_incident_reporter`.
+6. Register that Android application ID in the INZIRA project, or let FlutterFire create the Android app during configuration if prompted.
 7. From the repository root, run:
 
    ```powershell
-   npm install -g firebase-tools
    firebase login
+   .\tooling\bootstrap-firebase.ps1
+
+   # Manual alternative:
+   npm install -g firebase-tools
    dart pub global activate flutterfire_cli
-   flutterfire configure --platforms=android
+   flutterfire configure --project inzira-498621 --platforms=android
    ```
 
 8. Select the same Firebase project for the CLI and FlutterFire configuration.
@@ -60,12 +63,11 @@ The generated FlutterFire options file contains project-specific Firebase app id
 
 ## Deploy rules and indexes
 
-After selecting the project in the Firebase CLI, inspect the active project and deploy:
+The repository contains `.firebaserc` with INZIRA as the default Firebase CLI project. Inspect the active project and deploy:
 
 ```powershell
-firebase use --add
 firebase projects:list
-firebase deploy --only firestore:rules,firestore:indexes,storage
+firebase deploy --project inzira-498621 --only firestore:rules,firestore:indexes,storage
 ```
 
 The CLI's selected project must match the project configured in `lib/firebase_options.dart`. Do not deploy to a production project until you have reviewed the rules and confirmed the target.

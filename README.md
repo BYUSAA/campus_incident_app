@@ -8,7 +8,7 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 **Navigation:** `go_router`
 **Workflow:** Submitted → In Progress → Resolved
 
-> Firebase project options are generated for the project selected by the developer. No Firebase IDs, API keys, or Admin SDK credentials are invented or committed here.
+> **Firebase target project:** INZIRA (`inzira-498621`). This project ID was supplied from the project's Firebase Console URL. The Android Firebase app registration and generated `lib/firebase_options.dart` still require an authenticated FlutterFire setup. No API keys are guessed and no Admin SDK credentials are committed.
 
 ## Student and staff workflows
 
@@ -125,7 +125,7 @@ In Firebase Console, register the Android application ID and enable:
 Then run from the repository root using your actual Firebase project ID:
 
 ```powershell
-.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
+.\tooling\bootstrap-firebase.ps1
 ```
 
 The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It asks you to type `YES` before deploying any backend rules.
@@ -136,7 +136,7 @@ Manual alternative:
 npm install -g firebase-tools
 firebase login
 dart pub global activate flutterfire_cli
-flutterfire configure --project YOUR_FIREBASE_PROJECT_ID --platforms=android
+flutterfire configure --project inzira-498621 --platforms=android
 ```
 
 Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. After `flutter pub get`, commit the generated `pubspec.lock` so the app's resolved dependency versions are reproducible. Never commit service-account JSON, private keys, or passwords.
@@ -147,7 +147,7 @@ Confirm the intended Firebase project before deploying:
 
 ```powershell
 firebase projects:list
-firebase deploy --project YOUR_FIREBASE_PROJECT_ID --only firestore:rules,firestore:indexes,storage
+firebase deploy --project inzira-498621 --only firestore:rules,firestore:indexes,storage
 ```
 
 Rules in source control are not active on a live project until deployment succeeds. Review `firebase/README.md` first. Storage rules use a Firestore role lookup for staff access; deploy Firestore and Storage rules to the same Firebase project.
@@ -274,7 +274,7 @@ Capture genuine screenshots from the configured Android app and Firebase Console
 
 ## Known limitations
 
-- The Android runner is committed in source control. Firebase options remain project-specific and must be generated for the real Firebase project; no credentials or project IDs are fabricated.
+- The Android runner is committed in source control. The Firebase CLI default project is INZIRA (`inzira-498621`). The Android app must still be registered and FlutterFire must generate `lib/firebase_options.dart` after local Firebase authentication.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
 - Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
