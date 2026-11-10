@@ -9,6 +9,8 @@ This folder contains the Firebase rules, Firestore index, and automated emulator
 - **Cloud Storage:** optional photos at `incident_photos/{uid}/{fileName}`.
 - **Local Emulator Suite:** isolated Auth, Firestore, and Storage testing without writing to production data.
 
+> **INZIRA billing constraint:** The Firebase Console screenshot shows the Spark plan. Cloud Storage for Firebase requires Blaze pay-as-you-go billing to provision or access a bucket. Do not expect report-photo uploads to work on Spark. You can still configure Authentication and Firestore without enabling Storage; upgrade only after reviewing Firebase pricing and attaching a billing account.
+
 ## Data and access model
 
 Newly registered ALU accounts receive the `student` role. A trusted Firebase administrator assigns the `staff` role to a separate account. Users can read only their own profile document; staff-role checks use server-side rule lookups and do not grant staff a blanket read of student profiles. The mobile client has no role promotion feature.

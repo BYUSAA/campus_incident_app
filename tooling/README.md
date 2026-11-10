@@ -25,7 +25,7 @@ Use the project ID shown in your Firebase Console:
 
 The script defaults to INZIRA (`inzira-498621`), installs/checks the Firebase CLI and FlutterFire CLI, runs `flutterfire configure --project inzira-498621 --platforms=android`, and verifies that the generated options file replaced the repository placeholder. Pass `-ProjectId another-project-id` only when intentionally targeting a different project. It asks for an explicit `YES` before deploying Firestore rules, indexes, or Storage rules.
 
-Before accepting deployment, confirm in Firebase Console that Email/Password Authentication, Cloud Firestore, and Cloud Storage are enabled and that this is the correct project.
+Before accepting deployment, confirm in Firebase Console that Email/Password Authentication and Cloud Firestore are enabled and that this is the correct project. The INZIRA project currently shows the Spark plan: deploy Storage rules only after upgrading to Blaze, attaching a billing account, and creating the Storage bucket. Storage photo uploads cannot work on Spark.
 
 ## 3. Verify the mobile app
 
