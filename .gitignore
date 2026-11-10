@@ -14,7 +14,6 @@ android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 ios/Pods/
 macos/Pods/
-.firebaserc
 .firebase/
 **/node_modules/
 firebase-debug.log
