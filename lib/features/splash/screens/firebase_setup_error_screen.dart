@@ -10,8 +10,7 @@ class FirebaseSetupErrorApp extends StatelessWidget {
   final Object error;
 
   static const _applicationId = 'com.byusa.campus_incident_reporter';
-  static const _setupCommand =
-      r'.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID';
+  static const _setupCommand = r'.\tooling\bootstrap-firebase.ps1';
 
   bool get _missingProjectOptions => error is UnsupportedError;
 
@@ -69,11 +68,10 @@ class FirebaseSetupErrorApp extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       isMissingOptions
-                          ? 'This repository does not contain configuration for a real '
-                              'Firebase project yet. Project IDs and app credentials '
-                              'are intentionally not invented or shared in source control. '
-                              'Generate the Android options for your own Firebase project '
-                              'using the steps below.'
+                          ? 'This repository does not yet contain the generated Android configuration '
+                              'for the INZIRA Firebase project. The project ID is already '
+                              'set in the repository; complete the authenticated FlutterFire '
+                              'registration steps below to generate the Android options.'
                           : 'Firebase initialization failed before the app could open. '
                               'Check the diagnostic details below, then confirm that the '
                               'Android app is registered in the selected Firebase project.',
@@ -84,8 +82,10 @@ class FirebaseSetupErrorApp extends StatelessWidget {
                       number: '1',
                       title: 'Create or select your Firebase project',
                       description:
-                          'In Firebase Console, enable Email/Password Authentication, '
-                          'Cloud Firestore, and Cloud Storage.',
+                          'Use the existing INZIRA project (Project ID: inzira-498621). '
+                          'Enable Email/Password Authentication and create Cloud Firestore. '
+                          'Cloud Storage photo uploads require the Blaze pay-as-you-go plan '
+                          'and a billing account; you can skip Storage while using Spark.',
                     ),
                     const SizedBox(height: 14),
                     const _SetupStep(
@@ -101,7 +101,7 @@ class FirebaseSetupErrorApp extends StatelessWidget {
                       title: 'Generate the project configuration',
                       description:
                           'Run this command from the repository root in Windows PowerShell. '
-                          'Replace the placeholder with the Project ID shown in Firebase Console.',
+                          'The script already targets INZIRA (inzira-498621).',
                     ),
                     const SizedBox(height: 8),
                     DecoratedBox(
