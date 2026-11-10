@@ -122,13 +122,15 @@ In Firebase Console, register the Android application ID and enable:
 - Cloud Firestore
 - Cloud Storage
 
+**Cloud Storage billing note:** The INZIRA project currently uses the Spark plan. Firebase Cloud Storage requires the Blaze pay-as-you-go plan to create or access a bucket. Until you deliberately upgrade and attach a billing account, photo uploads will not work; Authentication and Firestore can be configured separately.
+
 Then run from the repository root using your actual Firebase project ID:
 
 ```powershell
 .\tooling\bootstrap-firebase.ps1
 ```
 
-The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It asks you to type `YES` before deploying any backend rules.
+The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It separately asks you to confirm Firestore rules/index deployment and Storage rules deployment. Skip the Storage deployment while the project remains on Spark; Storage requires Blaze billing and a provisioned bucket.
 
 Manual alternative:
 
