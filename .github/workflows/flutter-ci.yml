@@ -19,7 +19,7 @@ concurrency:
 jobs:
   flutter:
     name: Analyze, test, and build Android
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out repository
@@ -89,7 +89,7 @@ jobs:
 
   firebase-rules:
     name: Firebase Firestore and Storage rule tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Check out repository
