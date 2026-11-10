@@ -1,7 +1,7 @@
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string]$ProjectId
+    [string]$ProjectId = 'inzira-498621'
 )
 
 $ErrorActionPreference = 'Stop'
