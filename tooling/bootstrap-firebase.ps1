@@ -67,16 +67,32 @@ try {
     Write-Host 'The selected CLI project must be the same project used by FlutterFire.'
     Write-Host 'Rules and indexes are not deployed yet.'
 
-    $deploy = Read-Host "Deploy Firestore rules/indexes and Storage rules to '$ProjectId'? Type YES to continue"
-    if ($deploy -ceq 'YES') {
-        firebase deploy --project $ProjectId --only firestore:rules,firestore:indexes,storage
+    $deployFirestore = Read-Host "Deploy Firestore rules and indexes to '$ProjectId'? Type YES to continue"
+    if ($deployFirestore -ceq 'YES') {
+        firebase deploy --project $ProjectId --only firestore:rules,firestore:indexes
         if ($LASTEXITCODE -ne 0) {
-            throw 'Firebase deployment failed. Review the CLI output above.'
+            throw 'Firestore rules/index deployment failed. Review the CLI output above.'
         }
-        Write-Host 'Firebase rules and indexes deployed.' -ForegroundColor Green
+        Write-Host 'Firestore rules and indexes deployed.' -ForegroundColor Green
     }
     else {
-        Write-Host 'Deployment skipped. Review the rules, then deploy explicitly when ready.'
+        Write-Host 'Firestore deployment skipped. You can deploy it after reviewing the rules.'
+    }
+
+    Write-Host ''
+    Write-Host 'Cloud Storage billing requirement:' -ForegroundColor Yellow
+    Write-Host 'Firebase Storage requires the Blaze pay-as-you-go plan and a provisioned bucket.'
+    Write-Host 'The INZIRA project was shown on the Spark plan. Skip Storage deployment unless you deliberately upgraded and created its bucket.'
+    $deployStorage = Read-Host "Deploy Storage rules to '$ProjectId'? Type YES only when Blaze billing and the bucket are ready"
+    if ($deployStorage -ceq 'YES') {
+        firebase deploy --project $ProjectId --only storage
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Storage rules deployment failed. Confirm Blaze billing and that the default Storage bucket exists.'
+        }
+        Write-Host 'Storage rules deployed.' -ForegroundColor Green
+    }
+    else {
+        Write-Host 'Storage deployment skipped. Photo uploads remain unavailable until Storage is enabled on a supported billing plan.'
     }
 
     Write-Host ''
