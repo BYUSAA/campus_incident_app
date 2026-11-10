@@ -13,7 +13,7 @@ void main() {
     expect(find.textContaining('INZIRA'), findsWidgets);
     expect(find.textContaining('inzira-498621'), findsWidgets);
     expect(
-      find.text(r'.\\tooling\\bootstrap-firebase.ps1'),
+      find.text(r'.\tooling\bootstrap-firebase.ps1'),
       findsOneWidget,
     );
     expect(find.textContaining('YOUR_FIREBASE_PROJECT_ID'), findsNothing);
