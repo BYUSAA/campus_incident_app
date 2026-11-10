@@ -32,7 +32,7 @@ flutter build apk --debug
 Register the exact application ID above in the Firebase project. Enable Email/Password Authentication, Cloud Firestore, and Cloud Storage, then generate the project-specific Android options:
 
 ```powershell
-.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
+.\tooling\bootstrap-firebase.ps1
 ```
 
 The generated `lib/firebase_options.dart` is specific to your Firebase project. It is intentionally not fabricated in source control. See [Firebase setup](../firebase/README.md).
