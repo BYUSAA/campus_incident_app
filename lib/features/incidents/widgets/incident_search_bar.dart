@@ -15,10 +15,10 @@ class IncidentSearchBar extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         hintText: 'Search reports...',
-        prefixIcon: const Icon(Icons.search, color: Colors.grey),
-        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        prefixIcon: Icon(Icons.search, color: Colors.grey),
+        contentPadding: EdgeInsets.symmetric(vertical: 0),
         fillColor: Colors.white,
       ),
     );
