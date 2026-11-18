@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../shared/widgets/incident_photo.dart';
 
 class PhotoPicker extends StatefulWidget {
   const PhotoPicker({
@@ -111,8 +112,8 @@ class _PhotoPickerState extends State<PhotoPicker> {
                         width: double.infinity,
                       )
                     : existingUrl != null
-                        ? Image.network(
-                            existingUrl,
+                        ? IncidentPhoto(
+                            url: existingUrl,
                             fit: BoxFit.cover,
                             width: double.infinity,
                             errorBuilder: (context, error, stackTrace) =>
