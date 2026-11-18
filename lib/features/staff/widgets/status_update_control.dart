@@ -1,54 +1,42 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/incident_status.dart';
 
+/// Lets staff pick the next status for an incident. Every status is shown so
+/// the workflow is visible; only the current status and the next allowed step
+/// can be selected. Selecting does not save — the screen's "Update status"
+/// button does.
 class StatusUpdateControl extends StatelessWidget {
   const StatusUpdateControl({
     super.key,
     required this.currentStatus,
-    required this.onStatusChanged,
+    required this.selectedStatus,
+    required this.onSelected,
     this.enabled = true,
   });
 
   final String currentStatus;
-  final ValueChanged<String> onStatusChanged;
+  final String selectedStatus;
+  final ValueChanged<String> onSelected;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    final availableStatuses = IncidentStatus.optionsFor(currentStatus);
+    final allowed = IncidentStatus.optionsFor(currentStatus);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
-        borderRadius: BorderRadius.circular(AppConstants.radiusM),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: currentStatus,
-          isExpanded: true,
-          items: availableStatuses
-              .map(
-                (status) => DropdownMenuItem(
-                  value: status,
-                  child: Text(status),
-                ),
-              )
-              .toList(),
-          onChanged: enabled
-              ? (status) {
-                  if (status != null && status != currentStatus) {
-                    onStatusChanged(status);
-                  }
-                }
-              : null,
-        ),
-      ),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final status in IncidentStatus.values)
+          ChoiceChip(
+            label: Text(status),
+            selected: status == selectedStatus,
+            onSelected: enabled && allowed.contains(status)
+                ? (_) => onSelected(status)
+                : null,
+          ),
+      ],
     );
   }
 }
