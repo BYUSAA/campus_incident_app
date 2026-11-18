@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../models/incident.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/incident_provider.dart';
+import '../../../shared/widgets/incident_photo.dart';
 
 class IncidentDetailsScreen extends StatelessWidget {
   const IncidentDetailsScreen({super.key, required this.incident});
@@ -83,8 +84,8 @@ class IncidentDetailsScreen extends StatelessWidget {
             if (imageUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppConstants.radiusL),
-                child: Image.network(
-                  imageUrl,
+                child: IncidentPhoto(
+                  url: imageUrl,
                   width: double.infinity,
                   height: 210,
                   fit: BoxFit.cover,
