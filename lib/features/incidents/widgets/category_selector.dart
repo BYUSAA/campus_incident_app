@@ -15,7 +15,7 @@ class CategorySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: const InputDecoration(labelText: 'Incident category'),
       items: IncidentCategories.all
           .map(
