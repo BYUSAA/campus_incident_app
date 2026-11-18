@@ -23,7 +23,9 @@ class _MyIncidentsScreenState extends State<MyIncidentsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final user = context.read<AuthProvider>().user;
-      if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+      if (user != null) {
+        context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+      }
     });
   }
 
