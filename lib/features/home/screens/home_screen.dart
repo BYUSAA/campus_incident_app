@@ -41,7 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            if (user != null) context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+            if (user != null) {
+              context.read<IncidentProvider>().fetchUserIncidents(user.uid);
+            }
           },
           child: ListView(
             padding: const EdgeInsets.all(AppConstants.paddingL),
