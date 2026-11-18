@@ -14,6 +14,10 @@ void main() {
       ),
     );
 
+    // The submit button sits below the photo picker, outside the default
+    // 800x600 test viewport; scroll it into view before tapping.
+    await tester.ensureVisible(find.text('Submit Report'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Submit Report'));
     await tester.pumpAndSettle();
 
