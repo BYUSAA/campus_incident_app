@@ -30,18 +30,23 @@ class IncidentFilterSheet extends StatelessWidget {
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
-          ...filters.map(
-            (filter) => RadioListTile<String>(
-              title: Text(filter),
-              value: filter,
-              groupValue: currentFilter,
-              activeColor: theme.colorScheme.primary,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (value) {
-                if (value == null) return;
-                onFilterSelected(value);
-                Navigator.pop(context);
-              },
+          RadioGroup<String>(
+            groupValue: currentFilter,
+            onChanged: (value) {
+              if (value == null) return;
+              onFilterSelected(value);
+              Navigator.pop(context);
+            },
+            child: Column(
+              children: [
+                for (final filter in filters)
+                  RadioListTile<String>(
+                    title: Text(filter),
+                    value: filter,
+                    activeColor: theme.colorScheme.primary,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+              ],
             ),
           ),
         ],
