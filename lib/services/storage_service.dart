@@ -1,18 +1,38 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
+import '../core/constants/photo_storage.dart';
 import '../core/errors/app_exceptions.dart';
 
+/// Uploads, and deletes incident photos through the Cloudflare photo Worker
+/// (`cloudflare/photo-worker.js`), which stores them in R2. Every request
+/// carries the signed-in user's Firebase ID token; the Worker enforces the
+/// same owner/staff rules the Firebase Storage rules used to.
 class StorageService {
-  StorageService({FirebaseStorage? storage}) : _storage = storage;
+  StorageService({http.Client? client, FirebaseAuth? auth})
+    : _client = client ?? http.Client(),
+      _auth = auth ?? FirebaseAuth.instance;
 
-  final FirebaseStorage? _storage;
+  final http.Client _client;
+  final FirebaseAuth _auth;
 
-  // Resolve Firebase Storage only when a photo operation is requested.
-  // This keeps Authentication and Firestore usable on projects that have not
-  // provisioned a Storage bucket (for example, an INZIRA Spark-plan setup).
-  FirebaseStorage get _instance => _storage ?? FirebaseStorage.instance;
+  static const _timeout = Duration(seconds: 60);
+
+  /// Headers needed to display a photo with `Image.network`. Returns no
+  /// headers for URLs that are not served by the photo Worker.
+  static Future<Map<String, String>> photoHeaders(
+    String url, {
+    FirebaseAuth? auth,
+  }) async {
+    if (!PhotoStorage.isWorkerUrl(url)) return const {};
+    final token = await (auth ?? FirebaseAuth.instance).currentUser
+        ?.getIdToken();
+    return token == null ? const {} : {'Authorization': 'Bearer $token'};
+  }
 
   Future<String> uploadIncidentPhoto({
     required File file,
@@ -20,7 +40,7 @@ class StorageService {
   }) async {
     try {
       final fileSize = await file.length();
-      if (fileSize == 0 || fileSize >= 8 * 1024 * 1024) {
+      if (fileSize == 0 || fileSize >= PhotoStorage.maxBytes) {
         throw StorageException('Choose an image smaller than 8 MB.');
       }
 
@@ -38,31 +58,38 @@ class StorageService {
         _ => 'image/jpeg',
       };
       final fileName = '${DateTime.now().microsecondsSinceEpoch}.$extension';
-      final reference = _instance
-          .ref()
-          .child('incident_photos')
-          .child(uid)
-          .child(fileName);
-      final task = await reference.putFile(
-        file,
-        SettableMetadata(contentType: contentType),
+      final uri = Uri.parse('${PhotoStorage.apiBaseUrl}/photos/$uid/$fileName');
+      final bytes = await file.readAsBytes();
+
+      final response = await _sendWithAuth(
+        (headers) => _client.put(
+          uri,
+          headers: {...headers, 'Content-Type': contentType},
+          body: bytes,
+        ),
       );
-      return await task.ref.getDownloadURL();
-    } on StorageException {
-      rethrow;
-    } on FirebaseException catch (error) {
-      if (_isStorageUnavailable(error.code)) {
+      if (response.statusCode != 201) {
         throw StorageException(
-          'Photo uploads are not available for this Firebase project yet. '
-          'Cloud Storage requires a provisioned bucket and the Blaze '
-          'pay-as-you-go plan. You can still submit your report without a photo.',
-          error.code,
+          'The photo could not be uploaded: ${_errorMessage(response)}',
         );
       }
+
+      final url = (jsonDecode(response.body) as Map<String, dynamic>)['url'];
+      if (url is! String || !PhotoStorage.isWorkerUrl(url)) {
+        throw StorageException(
+          'The photo service returned an invalid response.',
+        );
+      }
+      return url;
+    } on StorageException {
+      rethrow;
+    } on TimeoutException {
       throw StorageException(
-        'Firebase Storage could not upload this photo: '
-        '${error.message ?? error.code}',
-        error.code,
+        'Uploading the photo timed out. Check your internet connection and try again.',
+      );
+    } on SocketException {
+      throw StorageException(
+        'Could not reach the photo service. Check your internet connection.',
       );
     } catch (error) {
       throw StorageException('Could not upload the incident photo: $error');
@@ -70,21 +97,57 @@ class StorageService {
   }
 
   Future<void> deletePhotoByUrl(String url) async {
-    try {
-      await _instance.refFromURL(url).delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') rethrow;
+    // Photos uploaded before the move to Cloudflare are not managed here.
+    if (!PhotoStorage.isWorkerUrl(url)) return;
+
+    final response = await _sendWithAuth(
+      (headers) => _client.delete(Uri.parse(url), headers: headers),
+    );
+    if (response.statusCode != 204 && response.statusCode != 404) {
+      throw StorageException(
+        'The photo could not be deleted: ${_errorMessage(response)}',
+      );
     }
   }
 
-  bool _isStorageUnavailable(String code) {
-    return const {
-      'no-default-bucket',
-      'bucket-not-found',
-      'quota-exceeded',
-      'storage/no-default-bucket',
-      'storage/bucket-not-found',
-      'storage/quota-exceeded',
-    }.contains(code);
+  /// Sends a request with the current ID token. If the Worker rejects it as
+  /// unauthenticated/unauthorised, retries once with a freshly minted token —
+  /// e.g. a cached token issued before the user verified their email.
+  Future<http.Response> _sendWithAuth(
+    Future<http.Response> Function(Map<String, String> headers) send,
+  ) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StorageException('Sign in again before managing photos.');
+    }
+
+    var response = await send(
+      _bearer(await user.getIdToken()),
+    ).timeout(_timeout);
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      response = await send(
+        _bearer(await user.getIdToken(true)),
+      ).timeout(_timeout);
+    }
+    return response;
+  }
+
+  static Map<String, String> _bearer(String? token) {
+    if (token == null) {
+      throw StorageException('Sign in again before managing photos.');
+    }
+    return {'Authorization': 'Bearer $token'};
+  }
+
+  static String _errorMessage(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map && body['error'] is String) {
+        return body['error'] as String;
+      }
+    } catch (_) {
+      // Fall through to the status code.
+    }
+    return 'HTTP ${response.statusCode}';
   }
 }
