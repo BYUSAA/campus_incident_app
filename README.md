@@ -3,19 +3,21 @@
 A Flutter Android application for reporting, tracking, and managing campus incidents such as damaged facilities, water interruptions, electrical faults, sanitation problems, and safety concerns.
 
 **Primary platform:** Android
-**Backend:** Firebase Authentication, Cloud Firestore, Firebase Storage
+**Backend:** Firebase Authentication, Cloud Firestore, Cloudflare R2 (incident photos, via a Cloudflare Worker)
 **State management:** Provider (`ChangeNotifier`)
 **Navigation:** `go_router`
 **Workflow:** Submitted → In Progress → Resolved
 
-> **Firebase target project:** INZIRA (`inzira-498621`). This project ID was supplied from the project's Firebase Console URL. The Android Firebase app registration and generated `lib/firebase_options.dart` still require an authenticated FlutterFire setup. No API keys are guessed and no Admin SDK credentials are committed.
+> `lib/firebase_options.dart` holds the Firebase **client** configuration for the project the app is connected to. It is not a secret (access is enforced by Firestore rules and the photo Worker), but if you use your own Firebase project, regenerate it as described below. No Admin SDK credentials, service-account keys, or passwords are committed.
+
+> **Why Cloudflare for photos?** Firebase Storage requires the paid Blaze plan for new projects. Photos are stored in Cloudflare R2 instead, behind a small Worker (`cloudflare/photo-worker.js`) that applies the same access rules the Firebase Storage rules did. Authentication and Firestore stay on the free Firebase Spark plan.
 
 ## Student and staff workflows
 
 ### Students
 - Register with a valid `@alustudent.com` address, verify the email, and reset a forgotten password.
 - Submit reports with title, description, category, location, and an optional photo.
-- Upload incident photos from the camera or gallery to Firebase Storage.
+- Upload incident photos (JPG, PNG, or WebP under 8 MB) from the camera or gallery; they are stored privately in Cloudflare R2.
 - View, search, filter, and inspect their own reports.
 - Edit or delete their own report while its status is `Submitted`, including replacing or removing an attached photo.
 - Update their profile display name without changing protected account fields.
@@ -25,10 +27,10 @@ A Flutter Android application for reporting, tracking, and managing campus incid
 ### Authorized staff
 - Sign in with a separate verified ALU account assigned the `staff` role by a trusted Firebase administrator.
 - Review the campus incident queue.
-- Move report status forward: `Submitted` → `In Progress` → `Resolved`.
-- Moderate reports, progress each status in sequence, and delete a report with its associated evidence when necessary.
+- Move report status forward: `Submitted` → `In Progress` → `Resolved`. Staff choose the next status, then confirm with **Update status**; statuses that are not the next step are disabled.
+- Delete a report and its photo with **Delete report**, which always asks for confirmation so a report is not removed by accident instead of being updated.
 
-There is no client-side role promotion. Firebase rules, not hidden navigation controls, enforce ownership and staff access.
+There is no client-side role promotion. Firestore rules and the photo Worker, not hidden navigation controls, enforce ownership and staff access.
 
 ## Architecture
 
@@ -42,22 +44,27 @@ Flutter feature screens and shared widgets
               Repositories
                   |
                   v
-             Firebase services
-             /       |        \
-            v        v         v
-       Firebase   Cloud      Firebase
-         Auth    Firestore   Storage
+               Services
+             /     |      \
+            v      v       v
+      Firebase   Cloud    Cloudflare Worker
+        Auth   Firestore  (verifies Firebase ID token)
+                               |
+                               v
+                         Cloudflare R2
+                        (incident photos)
 ```
 
 | Layer | Location | Responsibility |
 | --- | --- | --- |
-| Presentation | `lib/features/`, `lib/shared/` | Screens, reusable widgets, forms, navigation |
+| Presentation | `lib/features/`, `lib/shared/` | Screens, reusable widgets (incl. `IncidentPhoto`), forms, navigation |
 | State | `lib/providers/` | Authentication, incident streams, theme |
 | Workflows | `lib/repositories/` | Registration and incident operations |
-| Firebase adapters | `lib/services/` | Authentication, Firestore, Storage |
+| Service adapters | `lib/services/` | Firebase Authentication, Firestore, photo Worker (`StorageService`) |
 | Models | `lib/models/` | User and incident mapping |
-| Core | `lib/core/` | Routes, validation, theme, status constants |
-| Backend rules | `firebase/` | Firestore/Storage access control and indexes |
+| Core | `lib/core/` | Routes, validation, theme, status and photo-storage constants |
+| Backend rules | `firebase/` | Firestore access control and indexes |
+| Photo backend | `cloudflare/` | Worker that guards the R2 photo bucket |
 | Tests and evidence | `test/`, `integration_test/`, `docs/` | Automated tests, report, screenshots, demo |
 
 See [the architecture guide](docs/architecture/README.md) and [Mermaid diagram](docs/architecture/architecture_diagram.mmd).
@@ -119,18 +126,17 @@ The Gradle wrapper distribution is pinned in `android/gradle/wrapper/gradle-wrap
 
 In Firebase Console, register the Android application ID and enable:
 - Authentication → Sign-in method → Email/Password
-- Cloud Firestore
-- Cloud Storage
+- Cloud Firestore — create the **(default)** database in production mode
 
-**Cloud Storage billing note:** The INZIRA project currently uses the Spark plan. Firebase Cloud Storage requires the Blaze pay-as-you-go plan to create or access a bucket. Until you deliberately upgrade and attach a billing account, photo uploads will not work; Authentication and Firestore can be configured separately.
+Firebase Storage is **not** used (photos go to Cloudflare R2, see step 5), so the project can stay on the free Spark plan.
 
-Then run from the repository root using your actual Firebase project ID:
+The app reads its Firebase settings from `lib/firebase_options.dart`. To point the app at a different Firebase project, regenerate that file. Run from the repository root using your actual Firebase project ID:
 
 ```powershell
-.\tooling\bootstrap-firebase.ps1
+.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
-The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It separately asks you to confirm Firestore rules/index deployment and Storage rules deployment. Skip the Storage deployment while the project remains on Spark; Storage requires Blaze billing and a provisioned bucket.
+The script checks Firebase CLI login, installs FlutterFire CLI, runs `flutterfire configure --project ... --platforms=android`, and verifies that `lib/firebase_options.dart` is no longer the setup placeholder. It asks you to type `YES` before deploying any backend rules.
 
 Manual alternative:
 
@@ -138,23 +144,61 @@ Manual alternative:
 npm install -g firebase-tools
 firebase login
 dart pub global activate flutterfire_cli
-flutterfire configure --project inzira-498621 --platforms=android
+flutterfire configure --project YOUR_FIREBASE_PROJECT_ID --platforms=android
 ```
 
-Use the same Firebase project for FlutterFire configuration and CLI deployment. The generated `firebase_options.dart` contains client configuration, not Admin SDK credentials. After `flutter pub get`, commit the generated `pubspec.lock` so the app's resolved dependency versions are reproducible. Never commit service-account JSON, private keys, or passwords.
+If the FlutterFire CLI is not available, the same values can be copied from the `google-services.json` downloaded from Firebase Console (Project settings → Your apps → Android): `api_key.current_key` → `apiKey`, `mobilesdk_app_id` → `appId`, `project_number` → `messagingSenderId`, `project_id` → `projectId`, `storage_bucket` → `storageBucket`. Keep `android/app/google-services.json` out of source control (it is in `.gitignore`).
 
-## 4. Deploy security rules and indexes
+Use the same Firebase project for FlutterFire configuration and rules deployment. `firebase_options.dart` contains client configuration, not Admin SDK credentials. After `flutter pub get`, commit the generated `pubspec.lock` so the app's resolved dependency versions are reproducible. Never commit service-account JSON, private keys, or passwords.
 
-Confirm the intended Firebase project before deploying:
+## 4. Deploy Firestore security rules and index
+
+Rules in source control are not active on a live project until they are deployed. Review `firebase/README.md` first.
+
+**Option A — Firebase CLI:**
 
 ```powershell
+firebase login
 firebase projects:list
-firebase deploy --project inzira-498621 --only firestore:rules,firestore:indexes,storage
+firebase deploy --project YOUR_FIREBASE_PROJECT_ID --only firestore:rules,firestore:indexes
 ```
 
-Rules in source control are not active on a live project until deployment succeeds. Review `firebase/README.md` first. Storage rules use a Firestore role lookup for staff access; deploy Firestore and Storage rules to the same Firebase project.
+**Option B — Firebase Console (no CLI):**
 
-## 5. Run and verify the app
+1. **Firestore Database → Rules:** paste the contents of `firebase/firestore.rules` and click **Publish**.
+2. **Firestore Database → Indexes → Add index** (shown as a *structured* index in newer consoles):
+   collection ID `incidents` (plural), fields `reportedBy` Ascending and `createdAt` Descending, query scope **Collection**. Wait until it shows **Enabled**.
+
+Until the index is enabled, the student report list shows *"The query requires an index"*. Firestore also logs a link that creates the exact index; with a device connected, find it with `adb logcat | findstr create_composite`.
+
+## 5. Set up photo storage (Cloudflare R2 + Worker)
+
+Incident photos are uploaded to a private Cloudflare R2 bucket through the Worker in `cloudflare/photo-worker.js`. The app sends the signed-in user's Firebase ID token with every photo request; the Worker verifies it against Google's public keys and enforces:
+
+- only verified `@alustudent.com` accounts may use it;
+- users upload only into their own folder, `photos/{uid}/{fileName}`;
+- the owner and staff (`users/{uid}.role == 'staff'`, read from Firestore) may view and delete a photo;
+- only JPEG, PNG, or WebP images under 8 MB are accepted.
+
+Everything can be done in the Cloudflare dashboard (<https://dash.cloudflare.com>):
+
+1. **Enable R2:** Storage & databases → **R2 Object Storage** → enable it (Cloudflare asks for a card even for the free tier). Note that **KV** is a different product and is not used.
+2. **Create the bucket:** R2 → **Create bucket** → name `incident-photos`, location Automatic. Keep public access **off**.
+3. **Create the Worker:** Compute (Workers) → Workers & Pages → **Create** → **Start with Hello World** → name `incident-photos-api` → **Deploy** → **Edit code**, replace everything with the contents of `cloudflare/photo-worker.js`, then **Deploy**.
+4. **Connect the bucket and project:** open the Worker → **Settings**:
+   - Bindings → Add → **R2 bucket**: variable name `PHOTOS`, bucket `incident-photos`.
+   - Variables and Secrets → Add → **Text**: `FIREBASE_PROJECT_ID` = your Firebase project ID.
+   - Click **Deploy** after each change.
+5. **Check it:** open `https://<your-worker>.workers.dev/photos/test/test.jpg` in a browser. The expected response is `{"error":"Missing sign-in token"}`. If it says `Worker is missing PHOTOS or FIREBASE_PROJECT_ID`, recheck step 4.
+6. **Point the app at your Worker:** the default URL is set in `lib/core/constants/photo_storage.dart`. Either edit `defaultValue` there, or override it at build time:
+
+   ```powershell
+   flutter run --dart-define=PHOTO_API_URL=https://<your-worker>.workers.dev
+   ```
+
+The Worker URL is not a secret — every request is checked against the caller's Firebase sign-in. No Cloudflare API keys are stored in the app.
+
+## 6. Run and verify the app
 
 ```powershell
 flutter pub get
@@ -173,7 +217,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\tooling\verify-project.ps1
 ```
 
-This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when Firebase options and an Android device are available. **The local analysis, unit/widget tests, emulator security tests, and APK compilation can run even while `lib/firebase_options.dart` is still the setup placeholder.** In that situation, the Firebase-connected device smoke test is skipped with a warning, and the APK is compile-verified only; live sign-in, Firestore, Storage, and end-to-end behavior still require real Firebase configuration. The script stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` and `firebase/rules-tests/package-lock.json` afterward.
+This script resolves dependencies, formats Dart files, runs static analysis and Flutter tests, runs Firestore/Storage rules tests in local emulators, builds the Android debug APK, and runs the signed-out integration smoke test when an Android device is connected. It stops at the first failing step and prints the exact stage to fix. Review and commit the generated `pubspec.lock` and `firebase/rules-tests/package-lock.json` afterward.
 
 The assignment requires Android or iOS runtime evidence. A browser-only run does not replace the Android emulator or physical-device demonstration.
 
@@ -202,7 +246,7 @@ The assignment requires Android or iOS runtime evidence. A browser-only run does
 | `reporterName` | string | Creator's name at submission |
 | `status` | string | Submitted, In Progress, or Resolved |
 | `createdAt`, `updatedAt` | timestamp | Server-side times |
-| `imageUrl` | string/null | Optional Storage download URL |
+| `imageUrl` | string/null | Optional photo URL served by the photo Worker (`https://<worker>/photos/{uid}/{fileName}`) |
 | `photoUrls` | string array | Zero or one photo in the current app |
 | `assignedTo` | string/null | Optional staff assignment |
 
@@ -217,7 +261,8 @@ The student feed filters by `reportedBy` and orders by `createdAt` descending. I
 - Students cannot change report status, owner, reporter identity, or creation time.
 - Staff can progress reports only from Submitted to In Progress and then Resolved.
 - Users cannot promote themselves to staff.
-- Photos are stored under `incident_photos/{uid}/{fileName}`, limited to supported images smaller than 8 MB.
+- Photos are stored in R2 under `photos/{uid}/{fileName}`, limited to JPEG/PNG/WebP images smaller than 8 MB. The Worker enforces this.
+- Photo URLs are useless without a valid Firebase sign-in token; only the owner and staff can view or delete a photo.
 - Staff may read/delete evidence for reports they moderate.
 
 ## Automated tests
@@ -232,7 +277,7 @@ Coverage includes input validation, incident model mapping, status progression, 
 
 ### Firebase Emulator Suite rules tests
 
-Requirements: Node.js 22+, Java 17+, Firebase CLI.
+Requirements: Node.js 22+, **Java 21+** (the Firebase CLI's emulators no longer run on Java 17), Firebase CLI.
 
 ```powershell
 cd firebase/rules-tests
@@ -242,6 +287,8 @@ firebase emulators:exec --project demo-campus-incident-reporter --only firestore
 ```
 
 These tests use the local Firestore and Storage emulators with a `demo-` project ID, not the production Firebase project. They cover student ownership, role self-promotion, email verification, report lifecycle, photo ownership, MIME type, size limit, and staff evidence cleanup.
+
+> `firebase/storage.rules` and its tests are kept for reference, in case the project later moves to the Blaze plan and back to Firebase Storage. The running app does not use Firebase Storage; photo access rules are enforced by `cloudflare/photo-worker.js`.
 
 ### Device integration smoke test
 
@@ -257,10 +304,10 @@ The current device smoke test checks the signed-out redirect only. It does not r
 ## Staff test account
 
 1. Register a second ALU test account and verify its email.
-2. Locate the account's `users/{uid}` document in Firestore.
-3. Have a trusted Firebase administrator change its role from `student` to `staff`.
-4. Sign out and sign back in with the staff account.
-5. Demonstrate the queue, status progression, and report photo access.
+2. In Firebase Console → Firestore Database → Data → `users`, find the document whose `email` matches that account.
+3. Have a trusted Firebase administrator edit its `role` field from `student` to `staff` (lowercase).
+4. Sign out and sign back in with the staff account — the role is read at sign-in. The app opens the Staff Dashboard.
+5. Demonstrate the queue, status progression (choose a status → **Update status**), report photo access, and the delete confirmation.
 
 Never add a client-side self-promotion switch or commit administrator credentials.
 
@@ -276,10 +323,22 @@ Capture genuine screenshots from the configured Android app and Firebase Console
 
 ## Known limitations
 
-- The Android runner is committed in source control. The Firebase CLI default project is INZIRA (`inzira-498621`). The Android app must still be registered and FlutterFire must generate `lib/firebase_options.dart` after local Firebase authentication.
+- The Android runner is committed in source control. Firebase options remain project-specific and must be generated for the real Firebase project; no credentials or project IDs are fabricated.
 - Search and status filters operate on the reports loaded into the client; pagination/server-side search would be needed for larger deployments.
 - Push notifications, offline submission, pagination/server-side search, and a full staff assignment workflow are not implemented.
 - The integration smoke test is narrower than the full manual demonstration.
+- Photos depend on two providers (Firebase for sign-in and data, Cloudflare for files). If the Worker is unreachable, reports still load but photos show a placeholder and uploads fail with a clear error after a 60-second timeout.
+- Photos uploaded to Firebase Storage before the move to Cloudflare are not migrated.
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+| --- | --- |
+| App shows **"Connect your Firebase project"** | `lib/firebase_options.dart` is still the placeholder. See step 3. |
+| Student report list shows **"The query requires an index"** | The `incidents` composite index is missing, still building, or was created on the wrong collection name (it must be `incidents`). See step 4. |
+| Sign-up or submit spins forever | The device cannot reach Google's servers — e.g. mobile data stuck behind a carrier captive portal. Switch to Wi-Fi or open a browser on the phone to clear the portal. |
+| Photo shows a broken-image icon | Check the Worker URL in `lib/core/constants/photo_storage.dart` and the Worker's `PHOTOS` / `FIREBASE_PROJECT_ID` settings (step 5). |
+| Phone keeps disconnecting from `adb`/`flutter run` while using **scrcpy** | scrcpy ships its own `adb` that conflicts with the Android SDK's. Run `setx ADB "%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"` once and reopen the terminal. |
 
 ## License
 
