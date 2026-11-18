@@ -29,7 +29,8 @@ void main() {
     });
 
     test('rejects malformed ALU email values', () {
-      expect(Validators.validateEmail('not-an-email@alustudent.com'), 'Enter a valid email address');
+      expect(Validators.validateEmail('not-an-email'), 'Enter a valid email address');
+      expect(Validators.validateEmail('student@alustudent'), 'Enter a valid email address');
       expect(Validators.validateEmail('student @alustudent.com'), 'Enter a valid email address');
     });
 
