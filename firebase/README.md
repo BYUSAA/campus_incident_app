@@ -6,10 +6,8 @@ This folder contains the Firebase rules, Firestore index, and automated emulator
 
 - **Authentication:** Email/Password accounts and verification.
 - **Cloud Firestore:** user profiles at `users/{uid}` and incident records at `incidents/{incidentId}`.
-- **Cloud Storage:** optional photos at `incident_photos/{uid}/{fileName}`.
+- **Cloud Storage (not used by the current app):** `storage.rules` describes photos at `incident_photos/{uid}/{fileName}`. Because Firebase Storage needs the Blaze plan, the app now stores photos in Cloudflare R2 through `cloudflare/photo-worker.js`, which enforces the same owner/staff, verified-ALU, image-type and 8 MB rules. These rules are kept for a possible move back to Firebase Storage.
 - **Local Emulator Suite:** isolated Auth, Firestore, and Storage testing without writing to production data.
-
-> **INZIRA billing constraint:** The Firebase Console screenshot shows the Spark plan. Cloud Storage for Firebase requires Blaze pay-as-you-go billing to provision or access a bucket. Do not expect report-photo uploads to work on Spark. You can still configure Authentication and Firestore without enabling Storage; upgrade only after reviewing Firebase pricing and attaching a billing account.
 
 ## Data and access model
 
@@ -40,22 +38,19 @@ Rules enforce verified `@alustudent.com` email addresses for incident and photo 
 
 ## Configure a Firebase project
 
-1. Use the existing Firebase project **INZIRA**, project ID `inzira-498621` (the repository's `.firebaserc` default).
+1. Create or select the Firebase project.
 2. In **Authentication → Sign-in method**, enable **Email/Password**.
 3. Create the Cloud Firestore database.
 4. Enable the default Cloud Storage bucket.
-5. Confirm the committed Android application ID is `com.byusa.campus_incident_reporter`.
-6. Register that Android application ID in the INZIRA project, or let FlutterFire create the Android app during configuration if prompted.
+5. Generate Android project files and record its application ID.
+6. Register that Android application ID in Firebase Console.
 7. From the repository root, run:
 
    ```powershell
-   firebase login
-   .\tooling\bootstrap-firebase.ps1
-
-   # Manual alternative:
    npm install -g firebase-tools
+   firebase login
    dart pub global activate flutterfire_cli
-   flutterfire configure --project inzira-498621 --platforms=android
+   flutterfire configure --platforms=android
    ```
 
 8. Select the same Firebase project for the CLI and FlutterFire configuration.
@@ -65,11 +60,12 @@ The generated FlutterFire options file contains project-specific Firebase app id
 
 ## Deploy rules and indexes
 
-The repository contains `.firebaserc` with INZIRA as the default Firebase CLI project. Inspect the active project and deploy:
+After selecting the project in the Firebase CLI, inspect the active project and deploy:
 
 ```powershell
+firebase use --add
 firebase projects:list
-firebase deploy --project inzira-498621 --only firestore:rules,firestore:indexes,storage
+firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
 The CLI's selected project must match the project configured in `lib/firebase_options.dart`. Do not deploy to a production project until you have reviewed the rules and confirmed the target.
