@@ -1,7 +1,7 @@
 param(
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string]$ProjectId = 'inzira-498621'
+    [string]$ProjectId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,44 +25,12 @@ try {
         if ($LASTEXITCODE -ne 0) {
             throw 'Firebase CLI installation failed.'
         }
-
-        # Refresh this PowerShell process PATH. A global npm install can place
-        # firebase.cmd in the npm prefix, which may not be on the current PATH.
-        $npmGlobalPrefix = (& npm config get prefix 2>$null | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($npmGlobalPrefix)) {
-            throw 'Firebase CLI was installed, but npm did not return its global command directory. Open a new PowerShell window and retry.'
-        }
-        if (($env:Path -split ';') -notcontains $npmGlobalPrefix) {
-            $env:Path = "$npmGlobalPrefix;$env:Path"
-        }
     }
 
-    if (-not (Get-Command firebase -ErrorAction SilentlyContinue)) {
-        throw 'Firebase CLI is not available in this PowerShell session. Open a new PowerShell window and retry.'
-    }
-
-    Write-Host "Checking access to Firebase project '$ProjectId'..." -ForegroundColor Cyan
-    $projectListOutput = firebase projects:list --json 2>&1
-    $projectListExitCode = $LASTEXITCODE
-
-    if ($projectListExitCode -ne 0) {
-        Write-Host 'Firebase authentication is required. Complete the Google sign-in window.' -ForegroundColor Yellow
-        firebase login
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Firebase login did not complete successfully.'
-        }
-
-        $projectListOutput = firebase projects:list --json 2>&1
-        $projectListExitCode = $LASTEXITCODE
-    }
-
-    if ($projectListExitCode -ne 0) {
-        throw 'The Firebase CLI could not list projects. Confirm that the signed-in Google account has access to INZIRA (inzira-498621).'
-    }
-
-    $projectListText = $projectListOutput | Out-String
-    if ($projectListText -notmatch [regex]::Escape($ProjectId)) {
-        throw "The signed-in Google account cannot see Firebase project '$ProjectId'. Grant this account access to the project, then rerun the script."
+    Write-Host 'Checking Firebase account access...' -ForegroundColor Cyan
+    firebase login:list
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Firebase CLI login check failed. Run firebase login and retry.'
     }
 
     # Use explicit --project arguments throughout so the script does not
@@ -94,38 +62,21 @@ try {
     }
 
     Write-Host 'Firebase options generated.' -ForegroundColor Green
-    Write-Host 'Ensure Email/Password Authentication is enabled and Cloud Firestore is created in Firebase Console.'
-    Write-Host 'Cloud Storage is optional and requires Blaze billing plus a provisioned bucket; it is not required to start the app or submit reports without photos.'
+    Write-Host 'Ensure Email/Password Authentication, Cloud Firestore and Cloud Storage are enabled in Firebase Console.'
     Write-Host ''
     Write-Host 'The selected CLI project must be the same project used by FlutterFire.'
     Write-Host 'Rules and indexes are not deployed yet.'
 
-    $deployFirestore = Read-Host "Deploy Firestore rules and indexes to '$ProjectId'? Type YES to continue"
-    if ($deployFirestore -ceq 'YES') {
-        firebase deploy --project $ProjectId --only firestore:rules,firestore:indexes
+    $deploy = Read-Host "Deploy Firestore rules/indexes and Storage rules to '$ProjectId'? Type YES to continue"
+    if ($deploy -ceq 'YES') {
+        firebase deploy --project $ProjectId --only firestore:rules,firestore:indexes,storage
         if ($LASTEXITCODE -ne 0) {
-            throw 'Firestore rules/index deployment failed. Review the CLI output above.'
+            throw 'Firebase deployment failed. Review the CLI output above.'
         }
-        Write-Host 'Firestore rules and indexes deployed.' -ForegroundColor Green
+        Write-Host 'Firebase rules and indexes deployed.' -ForegroundColor Green
     }
     else {
-        Write-Host 'Firestore deployment skipped. You can deploy it after reviewing the rules.'
-    }
-
-    Write-Host ''
-    Write-Host 'Cloud Storage billing requirement:' -ForegroundColor Yellow
-    Write-Host 'Firebase Storage requires the Blaze pay-as-you-go plan and a provisioned bucket.'
-    Write-Host 'The INZIRA project was shown on the Spark plan. Skip Storage deployment unless you deliberately upgraded and created its bucket.'
-    $deployStorage = Read-Host "Deploy Storage rules to '$ProjectId'? Type YES only when Blaze billing and the bucket are ready"
-    if ($deployStorage -ceq 'YES') {
-        firebase deploy --project $ProjectId --only storage
-        if ($LASTEXITCODE -ne 0) {
-            throw 'Storage rules deployment failed. Confirm Blaze billing and that the default Storage bucket exists.'
-        }
-        Write-Host 'Storage rules deployed.' -ForegroundColor Green
-    }
-    else {
-        Write-Host 'Storage deployment skipped. Photo uploads remain unavailable until Storage is enabled on a supported billing plan.'
+        Write-Host 'Deployment skipped. Review the rules, then deploy explicitly when ready.'
     }
 
     Write-Host ''
