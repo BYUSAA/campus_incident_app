@@ -7,7 +7,7 @@ Services encapsulate Firebase SDK calls so screens and providers do not depend d
 | `FirebaseAuthService` | Create accounts, sign in, auth-state stream, verification email, password reset, reload, and sign out |
 | `EmailVerificationService` | Send verification emails, refresh the user, and force-refresh the ID-token verification claim |
 | `FirestoreService` | User-profile reads/writes and incident collection/document operations |
-| `StorageService` | Validate image extension/size, upload incident photos, and delete Storage objects by URL |
+| `StorageService` | Validate image extension/size, then upload and delete incident photos through the Cloudflare photo Worker (`cloudflare/photo-worker.js`, R2 storage), sending the user's Firebase ID token |
 
 ## Firebase configuration
 
