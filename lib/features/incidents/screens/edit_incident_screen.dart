@@ -13,11 +13,14 @@ class EditIncidentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Incident')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.paddingL),
-        child: IncidentForm(
-          initialIncident: incident,
-          onSuccess: () => context.pop(),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.paddingL),
+          child: IncidentForm(
+            initialIncident: incident,
+            onSuccess: () => context.pop(),
+          ),
         ),
       ),
     );
