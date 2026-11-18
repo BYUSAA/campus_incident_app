@@ -1,6 +1,6 @@
 # Local setup scripts
 
-The scripts in this folder automate the repeatable parts of the Windows setup. The repository's `.firebaserc` selects the user-provided INZIRA project (`inzira-498621`); no API keys, private credentials, or service-account files are stored here.
+The scripts in this folder automate the repeatable parts of the Windows setup. They do not contain Firebase project IDs, API keys, credentials, or service-account files.
 
 ## 1. Generate the Android platform
 
@@ -20,12 +20,12 @@ The script does not overwrite an existing Android runner.
 Use the project ID shown in your Firebase Console:
 
 ```powershell
-.\tooling\bootstrap-firebase.ps1
+.\tooling\bootstrap-firebase.ps1 -ProjectId YOUR_FIREBASE_PROJECT_ID
 ```
 
-The script defaults to INZIRA (`inzira-498621`), installs/checks the Firebase CLI and FlutterFire CLI, runs `flutterfire configure --project inzira-498621 --platforms=android`, and verifies that the generated options file replaced the repository placeholder. Pass `-ProjectId another-project-id` only when intentionally targeting a different project. It asks for an explicit `YES` before deploying Firestore rules, indexes, or Storage rules.
+The script installs/checks the Firebase CLI and FlutterFire CLI, selects the requested project, runs `flutterfire configure --platforms=android`, and verifies that the generated options file replaced the repository placeholder. It asks for an explicit `YES` before deploying Firestore rules, indexes, or Storage rules.
 
-Before accepting deployment, confirm in Firebase Console that Email/Password Authentication and Cloud Firestore are enabled and that this is the correct project. The INZIRA project currently shows the Spark plan: deploy Storage rules only after upgrading to Blaze, attaching a billing account, and creating the Storage bucket. Storage photo uploads cannot work on Spark.
+Before accepting deployment, confirm in Firebase Console that Email/Password Authentication, Cloud Firestore, and Cloud Storage are enabled and that this is the correct project.
 
 ## 3. Verify the mobile app
 
