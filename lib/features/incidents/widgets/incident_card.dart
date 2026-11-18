@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/incident.dart';
+import '../../../shared/widgets/incident_photo.dart';
 
 class IncidentCard extends StatelessWidget {
   const IncidentCard({
@@ -35,8 +36,8 @@ class IncidentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: imageUrl == null
                     ? _imagePlaceholder(colors)
-                    : Image.network(
-                        imageUrl,
+                    : IncidentPhoto(
+                        url: imageUrl,
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
